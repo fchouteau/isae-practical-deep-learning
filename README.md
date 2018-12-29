@@ -7,6 +7,7 @@ More information are available in the documentation website (https://fchouteau.g
 You can find a rough guideline and usage references in the jupyter notebooks in `jupyter/` (comments are also written in French)
 
 This hands on session is based on running code & training using [Google Cloud Platform Deep Learning VMs](https://cloud.google.com/deep-learning-vm/), see `gcp/` for examples on configuring your own machine. However, this is theoretically runnable everywhere since even data access in managed by the included python package.
+
 Should you want to continue this at home you can use Google Collaboratory instances: https://colab.research.google.com/
 
 ## Installation
