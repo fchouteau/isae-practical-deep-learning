@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>ISAE Practical Deep Learning Session</title>
+    <meta property="og:title" content="ISAE Practical Deep Learning Session" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://fchouteau.github.io/isae-practical-deep-learning/featured-slide.jpg" />
+    <meta property="og:url" content="https://fchouteau.github.io/isae-practical-deep-learning" />
+    <link rel="stylesheet" href="./css/reveal.css" />
+    <link rel="stylesheet" href="./css/theme/solarized.css" id="theme" />
+    <link rel="stylesheet" href="./css/highlight/solarized-light.css" />
+    <link rel="stylesheet" href="./css/print/paper.css" type="text/css" media="print" />
+    <link rel="stylesheet" href="./css/style.css" />
+
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides"><section ><section data-markdown><script type="text/template">
+
+# Deep Learning in Practice
+**ISAE-SUPAERO, December 2019**
+
+Florient CHOUTEAU, Matthieu LE GOFF, Marina GRUET
+
+</script></section><section data-markdown><script type="text/template">
+
+6 hours hands on session on applying "deep learning" to a "real" use-case
+
+<img src="static/img/dog_meme.jpg" alt="" width="512px" height="390px" style="background:none; border:none; box-shadow:none;"/>
+
+</script></section><section data-markdown><script type="text/template"> 
+## Detect Aircrafts on Satellite Imagery
+
+![](static/img/aircrafts.gif)
+
+</script></section><section data-markdown><script type="text/template">
+
+### Who we are
+
+
+- Computer Vision R&D at Airbus Defence and Space
+<img src="static/img/airbus_logo_white.png" alt="" width="220px" height="44px" style="background:none; border:none; box-shadow:none;"/>
+- Ground segment software for earth observation satellites
+- Working daily with Deep Learning on satellite imagery
+    - Information extraction (object detection, change detection...)
+    - Image processing (clouds, image enhancement)
+    - Research stuff (image simulation, self-supervision...)
+    
+
+</script></section><section data-markdown><script type="text/template"> 
+
+### Context
+
+...
+
+</script></section><section data-markdown><script type="text/template"> 
+
+### What we are going to do
+
+Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
+
+- ... using convolutional neural networks
+- ... using Pytorch
+- ... using a compute instance on Google Cloud Platform (with a GPU)
+
+<img src="static/img/aiplatform.png" alt="" width="170px" height="150px" style="background:white; border:none; box-shadow:none;"/>
+
+</script></section></section><section ><section data-markdown><script type="text/template">
+
+## Session 1: Hands-On
+
+</script></section><section data-markdown><script type="text/template">
+
+### Objectives
+
+- Setup your work environment on GCP
+- Train a basic CNN on a small training set
+- Plot the ROC curve on a small test set
+
+</script></section><section data-markdown><script type="text/template"> 
+
+### Outcomes
+
+- Use GCP to get access to computing power
+- Handle a dataset of images, do some basic data exploration
+- Review the basics of training Neural Network with Pytorch
+
+</script></section><section data-markdown><script type="text/template">
+
+### Dataset description
+
+*Include dataset description*
+
+</script></section><section data-markdown><script type="text/template">
+
+### Steps by steps
+
+1. Create your GCP Instance
+2. Connect to jupyterlab
+3. Import the first notebook & follow it
+4. Profit !
+5. If you're done... go to Session 2 !
+
+</script></section></section><section ><section data-markdown><script type="text/template">
+
+## Session 2: High-level framework, class imbalance, predicting on large images
+
+</script></section><section data-markdown><script type="text/template">
+
+### Objectives
+
+- Train a CNN on a larger & imbalanced dataset
+- Plot the PR curve of your model
+- Apply your model on larger images to detect aircrafts
+
+</script></section><section data-markdown><script type="text/template">
+
+### Dataset description
+
+*Include dataset description*
+
+</script></section><section data-markdown><script type="text/template">
+
+### Outcomes
+
+- Discover higher-level DL frameworks (skorch)
+- Tackle a dataset with huge class imbalance
+- Discover Precision-Recall Curves
+- Discover applying models on larger images using the sliding window technique
+
+</script></section><section data-markdown><script type="text/template"> 
+### Steps by steps
+
+1. Start/Restart your machine
+2. Follow notebooks 2 and 3
+
+
+</script></section></section><section ><section data-markdown><script type="text/template"> 
+
+## Creating our GCP Deep Learning VM
+
+</script></section><section data-markdown><script type="text/template">
+
+*Include step by step tutorial*
+
+</script></section></section><section ><section data-markdown><script type="text/template"> 
+
+## Concluding remarks
+
+</script></section><section data-markdown><script type="text/template">
+
+Welcome to the life of a deep learning engineer !
+
+</script></section><section data-markdown><script type="text/template">
+
+![](static/img/tesla.jpg)
+
+</script></section><section data-markdown><script type="text/template">
+
+Contact:  
+florient.f.chouteau@airbus.com  
+matthieu.le-goff@airbus.com  
+marina.gruet@airbus.com  
+
+</script></section></section></div>
+    </div>
+
+    <script src="./js/reveal.js"></script>
+
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+      // Optional libraries used to extend on reveal.js
+      var deps = [
+        { src: './plugin/markdown/marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+        { src: './plugin/markdown/markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+        { src: './plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+        { src: './plugin/zoom-js/zoom.js', async: true },
+        { src: './plugin/notes/notes.js', async: true },
+        { src: './plugin/math/math.js', async: true }
+      ];
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        dependencies: deps
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal.getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"transition":"fade","transitionSpeed":"default","controls":false}, queryOptions);
+    </script>
+
+
+    <script>
+      Reveal.initialize(options);
+    </script>
+  </body>
+</html>
