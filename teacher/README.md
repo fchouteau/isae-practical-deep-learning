@@ -15,6 +15,12 @@ Contain the necessary scripts and tools to:
 - [Generate Dataset Small](./generate_student_dataset_toy.py)
 - [Generate Dataset Large](./generate_student_dataset_large.py)
 
+## Student notebooks
+
+Student notebooks are generated using jupytext python files. Solutions cells are not exported if they are tagged as "exercise"
+
+See [build student notebook](./build_student_notebooks.sh) script (you need to `pip install nb-filter-cells`)
+
 ## Installation
 
 install pytorch
