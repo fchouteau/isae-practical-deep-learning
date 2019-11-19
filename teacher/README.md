@@ -7,8 +7,13 @@ Contain the necessary scripts and tools to:
 ## How-to
 
 - [build the documentation website](./build_docs_site.sh)
-- [generate the slides in PDF](./generate_pdf.sh)
-- [Live edit the slides](./watch_docs_site.sh)
+- [generate the slides in PDF](./build_docs_pdf.sh)
+- [Live edit the slides](./build_docs_serve.sh)
+
+- [Download Data](./get_data.py)
+- [Explore the dataset](./data_exploration.py)
+- [Generate Dataset Small](./generate_student_dataset_toy.py)
+- [Generate Dataset Large](./generate_student_dataset_large.py)
 
 ## Installation
 
