@@ -85,7 +85,7 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 ### Outcomes
 
-- Use GCP to get access to computing power
+- Use GCP to get access to computing power & GPUs
 - Handle a dataset of images, do some basic data exploration
 - Review the basics of training Neural Network with Pytorch
 
@@ -93,7 +93,11 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 ### Dataset description
 
-*Include dataset description*
+- 2250 train images (1125 aircrafts, 1125 background), 64x64
+- 750 test images (375 aircrafts, 375 background), 64x64
+
+![](static/img/toy_dataset.png) <!-- .element height="40%" width="40%" -->
+
 
 <!--v-->
 
@@ -119,9 +123,27 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 <!--v-->
 
-### Dataset description
+### Trainval Dataset description
 
-*Include dataset description*
+- 40000 64x64 train images
+- 15000 64x64 test images
+- **1/10 aircraft-background ratio**
+
+![](static/img/large_dataset.png) <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### Test Dataset description
+
+- 30 512x512 images with some aircrafts
+
+![](static/img/large_tiles.png) <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### Sliding window ?
+
+![](static/img/sliding_window.gif)
 
 <!--v-->
 
