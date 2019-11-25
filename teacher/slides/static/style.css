@@ -8,7 +8,7 @@
  *
  * By Salvador de la Puente, https://salvadelapuente.com
  */
-@import url('https://fonts.googleapis.com/css?family=Fira+Sans|Lato|Shadows+Into+Light+Two&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Fira+Sans|Lato|Shadows+Into+Light+Two|Cabin+Sketch&display=swap');
 
 /*********************************************
   * GLOBAL STYLES
@@ -58,8 +58,10 @@ body {
 }
 
 .reveal h1 {
-    font-family: 'Shadows Into Light Two', cursive;
-    font-size: 2em;
+    font-family: 'Cabin Sketch', 'Shadows Into Light Two', cursive;
+    text-shadow: none;
+    font-weight: normal;
+    font-size: 2.0em;
 }
 
 .reveal h2 {
@@ -72,10 +74,6 @@ body {
 
 .reveal h4 {
     font-size: 1em;
-}
-
-.reveal h1 {
-    text-shadow: none;
 }
 
 /*********************************************
