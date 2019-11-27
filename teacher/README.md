@@ -8,26 +8,30 @@ Contain the necessary scripts and tools to:
 
 - [build the documentation website](./build_docs_site.sh)
 - [generate the slides in PDF](./build_docs_pdf.sh)
-- [Live edit the slides](./build_docs_serve.sh)
+- [live edit the slides](./build_docs_serve.sh)
+- [build student notebooks](./build_student_notebooks.sh)
 
 - [Download Data](./get_data.py)
 - [Explore the dataset](./data_exploration.py)
 - [Generate Dataset Small](./generate_student_dataset_toy.py)
 - [Generate Dataset Large](./generate_student_dataset_large.py)
+- [Generate Tiles for prediction](./generate_student_dataset_eval_tiles.py)
 
 ## Student notebooks
 
 Student notebooks are generated using jupytext python files. Solutions cells are not exported if they are tagged as "exercise"
 
-See [build student notebook](./build_student_notebooks.sh) script (you need to `pip install nb-filter-cells`)
+See [build student notebook](./build_student_notebooks.sh) script (you need to )
 
-## Installation
+## Installation of dev environment
 
-install pytorch
+you should have pytorch torchvision and skorch installed
 
 ```bash
 conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
 ```
+
+to generate student notebooks you need `nb-filters-cells`:  `pip install nb-filter-cells`
 
 ## About
 
