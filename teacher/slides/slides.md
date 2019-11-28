@@ -16,6 +16,12 @@ revealOptions:
 
 Florient CHOUTEAU, Marina GRUET, Matthieu LE GOFF
 
+<!--v-->
+
+Slides : https://fchouteau.github.io/isae-practical-deep-learning/
+
+Notebooks : https://github.com/fchouteau/isae-practical-deep-learning
+
 <!--s-->
 
 ## Detect Aircrafts on Satellite Imagery
@@ -44,18 +50,28 @@ This is awesome ! Stop using powerpoint !
 
 
 - Computer Vision R&D at Airbus Defence and Space
-<img src="static/img/airbus_logo_white.png" alt="" width="220px" height="44px" style="background:none; border:none; box-shadow:none;"/>
+
 - Ground segment software for earth observation satellites
 - Working daily with Deep Learning on satellite imagery
     - Information extraction (object detection, change detection...)
     - Image processing (clouds, image enhancement)
     - Research stuff (image simulation, self-supervision...)
-    
+ 
+**BTW.... We have internships !** <!-- .element: class="fragment" data-fragment-index="1" -->
+
+<img src="static/img/airbus_logo_white.png" alt="" width="220px" height="44px" style="position: absolute; bottom: 0px; right: 0px; background:none; border:none; box-shadow:none;"/>
+
 <!--v-->
 
-### Context
+### Context: Earth Observation
 
-<img src="static/img/context.png" alt="" width="80%" height="80%" style="background:white; border:none; box-shadow:none;"/>
+![](static/img/context.png)  <!-- .element:  width="80%" height="80%" style="background:white; border:none; box-shadow:none;"-->
+
+<!--v-->
+
+### Objects in Satellite Imagery
+
+![](static/img/large_pyramid.jpg)  <!-- .element:  width="55%" height="55%" style="background:white; border:none; box-shadow:none;"-->
 
 <!--v-->
 
@@ -63,11 +79,11 @@ This is awesome ! Stop using powerpoint !
 
 Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
-- ... using convolutional neural networks
-- ... using Pytorch
-- ... using a compute instance on Google Cloud Platform (with a GPU)
+- using convolutional neural networks <!-- .element: class="fragment" data-fragment-index="1" -->
+- using pytorch <!-- .element: class="fragment" data-fragment-index="2" -->
+- using a Virtual Machine w/ GPU on Google Cloud Platform <!-- .element: class="fragment" data-fragment-index="3" -->
 
-<img src="static/img/aiplatform.png" alt="" width="170px" height="150px" style="background:white; border:none; box-shadow:none;"/>
+![](static/img/aiplatform.png) <!-- .element: class="fragment" data-fragment-index="3"  width="170px" height="150px" style="background:white; border:none; box-shadow:none;" -->
 
 <!--s-->
 
@@ -87,7 +103,8 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 - Use GCP to get access to computing power & GPUs
 - Handle a dataset of images, do some basic data exploration
-- Review the basics of training Neural Network with Pytorch
+- Discover *skorch* a high-level deep-learning framework for pytorch
+- Train & evaluate your first CNN on a simple dataset
 
 <!--v-->
 
@@ -98,12 +115,18 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 ![](static/img/toy_dataset.png) <!-- .element height="40%" width="40%" -->
 
+<!--v-->
+
+### Remember GCP class ? Use either...
+
+- Google Colaboratory
+- Jupyter AI Notebook (use custom instance + gpu, pytorch 1.2 & jupyter lab)
 
 <!--v-->
 
 ### Steps by steps
 
-1. Create your GCP Instance
+1. Create your AI Notebook / Google Colab
 2. Connect to jupyterlab
 3. Import the first notebook & follow it
 4. Profit !
@@ -111,14 +134,15 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 <!--s-->
 
-## Session 2: High-level framework, class imbalance, sliding windows
+## Session 2: Class Imbalance & Sliding Windows
 
 <!--v-->
 
 ### Objectives
 
 - Train a CNN on a larger & imbalanced dataset
-- Diagnose the performance of a model on imbalanced data
+- Evaluate the performance of a model on imbalanced data
+- Try and improve performance
 - Apply your model on larger images to detect aircrafts
 
 <!--v-->
@@ -143,14 +167,17 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 ### Sliding window ?
 
+- Training Image Size: 64x64, output = binary classification
+- Target Image Size: 512x512, target = detect & count aircrafts ?
+
 ![](static/img/sliding_window.gif)
 
 <!--v-->
 
 ### Outcomes
 
-- Discover higher-level DL frameworks (skorch)
 - Tackle a dataset with huge class imbalance
+- Discover more advanced techniques for training CNNs
 - Discover Precision-Recall Curves
 - Discover applying models on larger images using the sliding window technique
 
@@ -162,14 +189,6 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 2. Follow notebooks 2 and 3
 
 ![](https://i.stack.imgur.com/U9Iki.png)
-
-<!--s-->
-
-## Creating our GCP Deep Learning VM
-
-<!--v-->
-
-*Include step by step tutorial*
 
 <!--s-->
 
@@ -186,7 +205,12 @@ Welcome to the life of a deep learning engineer !
 <!--v-->
 
 Contact:  
+
 florient.f.chouteau@airbus.com  
 matthieu.le-goff@airbus.com  
 marina.gruet@airbus.com  
+
+<!--v-->
+
+![](https://media.giphy.com/media/lD76yTC5zxZPG/giphy.gif)
 

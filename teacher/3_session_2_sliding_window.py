@@ -1,12 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
+#     cell_metadata_json: true
 #     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
-#       format_version: '1.2'
-#       jupytext_version: 1.2.4
+#       format_version: '1.3'
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -14,8 +15,8 @@
 # ---
 
 # %% [markdown]
-# # Session 2 part 2: Using the sliding window technique to predict on larger images
-
+# # Session 2 Part 2: Using the sliding window technique to predict on larger images
+# In this session we will load our previously detected model and apply it on large images using the sliding window technique
 # %%
 # Put your imports here
 import numpy as np
