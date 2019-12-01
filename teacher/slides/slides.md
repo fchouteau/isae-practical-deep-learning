@@ -48,7 +48,6 @@ This is awesome ! Stop using powerpoint !
 
 ### Who we are
 
-
 - Computer Vision R&D at Airbus Defence and Space
 
 - Ground segment software for earth observation satellites
@@ -69,9 +68,30 @@ This is awesome ! Stop using powerpoint !
 
 <!--v-->
 
-### Objects in Satellite Imagery
+### Context: Machine Learning on Satellite Imagery
+
+A lot of use cases (public):
+
+- Land Use / Land Cover cartography
+- Urban Cartography (building, roads, damage assessment...)
+- Various objects detections (ships, vehicles..)
+
+![](https://www.aerospace-valley.com/sites/default/files/styles/news_main/public/thumbnails/image/airbus_ship_detection_challenge.png?itok=i7DpZPus)
+
+<!--v-->
+
+### Context: Needles in haystacks
 
 ![](static/img/large_pyramid.jpg)  <!-- .element:  width="55%" height="55%" style="background:white; border:none; box-shadow:none;"-->
+
+<!--v-->
+
+### What you did last Wednesday 
+
+- Trained a Convolutional Neural Network on Fashion MNIST
+- Wrote your first training loops with Pytorch
+- Discovered callbacks (early stopping), optimizers (sgd, adam), dropout
+- Saw your firsts neural architectures (alexnet, vggs, resnets)
 
 <!--v-->
 
@@ -84,6 +104,7 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 - using a Virtual Machine w/ GPU on Google Cloud Platform <!-- .element: class="fragment" data-fragment-index="3" -->
 
 ![](static/img/aiplatform.png) <!-- .element: class="fragment" data-fragment-index="3"  width="170px" height="150px" style="background:white; border:none; box-shadow:none;" -->
+
 
 <!--s-->
 
@@ -105,6 +126,17 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 - Handle a dataset of images, do some basic data exploration
 - Discover *skorch* a high-level deep-learning framework for pytorch
 - Train & evaluate your first CNN on a simple dataset
+
+<!--v-->
+
+### [Skorch](https://github.com/skorch-dev/skorch) ?
+
+- Skorch is a high-level deep learning framework based on top of pytorch
+- It automates some of the things that are painful to write (like training loops, early stopping, logging...)
+- Skorch mimics the scikit-learn API so it's one of the simplest
+- There are other high-level frameworks based on pytorch: [Ignite](https://github.com/pytorch/ignite), [Lightning](https://github.com/williamFalcon/pytorch-lightning)
+- All of them have their pros and cons
+- [There is a huge ecosystem based around pytorch](https://pytorch.org/ecosystem/) which we only grasp here
 
 <!--v-->
 
