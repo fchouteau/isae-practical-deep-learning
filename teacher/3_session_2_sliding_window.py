@@ -22,7 +22,7 @@
 #
 # ![](slides/static/img/sliding_window.gif)
 #
-# For more information about the sliding window technique refer to this excellent article: 
+# For more information about the sliding window technique refer to this excellent article:
 #
 # https://www.pyimagesearch.com/2015/03/23/sliding-windows-for-object-detection-with-python-and-opencv/
 #
@@ -34,9 +34,6 @@ import numpy as np
 # %%
 # Global variables
 tiles_dataset_url = "https://storage.googleapis.com/isae-deep-learning/tiles_aircraft_dataset.npz"
-
-# %% {"tags": ["exercise"]}
-# This cell should not be exported
 
 # %% [markdown]
 # ## Download the dataset
@@ -66,7 +63,7 @@ eval_tiles = eval_tiles['eval_tiles']
 # %% [markdown]
 # ## Code the sliding window
 #
-# Intuitively, it's about applying an aircraft classifier trained on 64x64 pictures of aircraft or "anything else" as a detector. 
+# Intuitively, it's about applying an aircraft classifier trained on 64x64 pictures of aircraft or "anything else" as a detector.
 #
 # Our network structure more or less prevents applying it to the full 512x512 images, and even if it could (you may be able to do it with global pooling layers...) this would not bring much information ("there is at least one aircraft in this region" sometimes is not sufficient).
 #
@@ -88,7 +85,7 @@ eval_tiles = eval_tiles['eval_tiles']
 # %%
 
 # %% [markdown]
-# ## What's next ? 
+# ## What's next ?
 #
 # Well...
 #

@@ -26,7 +26,7 @@
 #   - The dataset itself
 #   - The optimization parameters
 #   - The network architecture
-#   
+#
 # Remember that "deep learning" is still considered somewhat a black art so it's hard to know in advance what will work.
 
 # %%
@@ -36,9 +36,6 @@ import numpy as np
 # %%
 # Global variables
 TRAINVAL_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/trainval_aircraft_dataset.npz"
-
-# %% {"tags": ["exercise"]}
-# This cell should not be exported
 
 # %% [markdown]
 # ## Q0. Downloading & splitting the dataset
@@ -50,7 +47,7 @@ TRAINVAL_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/trainv
 #
 # ![](https://i.stack.imgur.com/osBuF.png)
 #
-# Refer to this: 
+# Refer to this:
 # https://towardsdatascience.com/train-validation-and-test-sets-72cb40cba9e7
 #
 #
@@ -66,7 +63,6 @@ train_images = trainval_dataset['train_images']
 train_labels = trainval_dataset['train_labels']
 test_images = trainval_dataset['test_images']
 test_labels = trainval_dataset['test_labels']
-
 
 # %%
 # Split the dataset
@@ -89,9 +85,8 @@ test_labels = trainval_dataset['test_labels']
 # %%
 # Q1
 
-
 # %% [markdown]
-# During the previous notebook you plotted the Receiver Operating Characteristic curve. This is not ideal when dealing with imbalanced dataset since the issue of class imbalance can result in a serious bias towards the majority class, reducing the classification performance and increasing the number of **false positives**. Furthermore, in ROC curve calculation, true negatives don't have such meaning any longer. 
+# During the previous notebook you plotted the Receiver Operating Characteristic curve. This is not ideal when dealing with imbalanced dataset since the issue of class imbalance can result in a serious bias towards the majority class, reducing the classification performance and increasing the number of **false positives**. Furthermore, in ROC curve calculation, true negatives don't have such meaning any longer.
 #
 # Instead this time we will plot the Precision Recall curve of our model which uses precision and recall to evaluate models.
 #
@@ -145,7 +140,7 @@ test_labels = trainval_dataset['test_labels']
 #
 # ii ) An other important parameter is the learning rate, you can [check its effect on the behavior of your training](https://developers.google.com/machine-learning/crash-course/fitter/graph).
 #
-# iii) There is no absolute law concerning the structure of your deep Learning model. During the [Deep Learning class](https://github.com/erachelson/MLclass/blob/master/7%20-%20Deep%20Learning/Deep%20Learning.ipynb) you had an overview of existing models 
+# iii) There is no absolute law concerning the structure of your deep Learning model. During the [Deep Learning class](https://github.com/erachelson/MLclass/blob/master/7%20-%20Deep%20Learning/Deep%20Learning.ipynb) you had an overview of existing models
 #
 # You can operate a modification on your structure and observe the effect on final metrics. Of course, remain consistent with credible models, cf Layer Patterns chapter on this "must view" course : http://cs231n.github.io/convolutional-networks/
 #
@@ -162,7 +157,7 @@ test_labels = trainval_dataset['test_labels']
 # You can try and apply those techniques to your use case.
 #
 # - Does these techniques yield good results ? What about the effort-spent-for-performance ratio ?
-# - Do you find it easy to keep track of your experiments ? 
+# - Do you find it easy to keep track of your experiments ?
 # - What would you need to have a better overview of the effects of these search ?
 #
 # Don't spend too much time on this part as the next is more important. You can come back to it after you're finished
@@ -179,10 +174,10 @@ test_labels = trainval_dataset['test_labels']
 # b. If you're not satisfied with the output of your model, consider the following idea: Training a new model with the failures of your previous model.
 # Try the following:
 # - Get all the images with the "aircraft" label
-# - Get all the images with the "background" label where your best model was wrong (predicted aircraft), as well as some of the background where it was right. 
+# - Get all the images with the "background" label where your best model was wrong (predicted aircraft), as well as some of the background where it was right.
 # - Train a new model or retrain your existing one on this dataset.
 #
-# Did it bring any improvements ? 
+# Did it bring any improvements ?
 #
 # c . **!!!! SAVE YOUR MODEL !!!**
 

@@ -28,6 +28,10 @@
 # **What we are going to do**
 
 # %%
+# install dependencies
+# # %pip install skorch
+
+# %%
 # Put your imports here
 import numpy as np
 
@@ -41,6 +45,13 @@ TOY_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/toy_aircraf
 # We will be using [numpy datasources](https://docs.scipy.org/doc/numpy/reference/generated/numpy.DataSource.html?highlight=datasources) to download the dataset. DataSources can be local files or remote files/URLs. The files may also be compressed or uncompressed. DataSource hides some of the low-level details of downloading the file, allowing you to simply pass in a valid file path (or URL) and obtain a file object.
 #
 # The dataset is in npz format which is a packaging format where we store several numpy arrays in key-value format
+#
+# Note:
+# If you get an error with the code below run:
+# ```python
+# !gsutil -m cp -r gs://isae-deep-learning/toy_aircraft_dataset.npz /tmp/storage.googleapis.com/isae-deep-learning/toy_aircraft_dataset.npz
+# ```
+# in a cell above the cell below
 
 # %%
 ds = np.DataSource(destpath="/tmp/")
@@ -51,11 +62,6 @@ train_images = toy_dataset['train_images']
 train_labels = toy_dataset['train_labels']
 test_images = toy_dataset['test_images']
 test_labels = toy_dataset['test_labels']
-
-# %%
-ds = np.DataSource(destpath="/tmp/")
-ds.abspath(TOY_DATASET_URL)
-# !gsutil -m cp -r gs://isae-deep-learning/toy_aircraft_dataset.npz /tmp/storage.googleapis.com/isae-deep-learning/toy_aircraft_dataset.npz
 
 # %% [markdown]
 # ## A bit of data exploration
@@ -77,7 +83,7 @@ ds.abspath(TOY_DATASET_URL)
 # Here are some functionnality examples. Try them and make your own. A well-understandood dataset is the key to an efficient model.
 
 # %%
-import matplotlib
+import cv2
 import matplotlib.pyplot as plt
 
 # %matplotlib inline
@@ -95,7 +101,20 @@ for l, label in enumerate(LABEL_NAMES):
     print(f"Examples shape for label {l} : {train_images[train_labels == l, ::].shape}")
 
 # %%
-plt.imshow(train_images[0, ::])
+grid_size = 4
+grid = np.zeros((grid_size * 64, grid_size * 64, 3)).astype(np.uint8)
+for i in range(grid_size):
+    for j in range(grid_size):
+        tile = np.copy(train_images[i * grid_size + j])
+        label = np.copy(train_labels[i * grid_size + j])
+        color = (0, 255, 0) if label == 1 else (255, 0, 0)
+        tile = cv2.rectangle(tile, (0, 0), (64, 64), color, thickness=2)
+        grid[i * 64:(i + 1) * 64, j * 64:(j + 1) * 64, :] = tile
+
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(1, 1, 1)
+ax.imshow(grid)
+plt.show()
 
 # %% [markdown]
 # # Training
@@ -112,14 +131,12 @@ plt.imshow(train_images[0, ::])
 # If you still prefer writing your own loop, feel free to overwrite the next cells.
 
 # %%
-import skorch
 from skorch import NeuralNetClassifier
-
+import torch
 import torch.nn as nn
 import torch.optim as optim
 
 # %%
-
 # Define the torch model to use
 # Here a sequential layer is used instead of the classical nn.Module
 # If you need to write your own modulem plenty of resources are available one the web or in deep learning course
@@ -141,20 +158,20 @@ module = nn.Sequential(
     nn.Linear(256, 256),
     nn.ReLU(),
     nn.Linear(256, 2),
-    nn.Softmax()
-
+    nn.Softmax(),
 )
 
+# %%
 # The famous skorch wrapper useful yet not complex and it has a sklearn friendly API
+
 net = NeuralNetClassifier(
     module,
-    max_epochs=10,
+    max_epochs=2,
     lr=0.01,
     # Shuffle training data on each epoch
     iterator_train__shuffle=True,
-    device="cuda",
-    optimizer=optim.SGD
-)
+    device="cuda" if torch.cuda.is_available() else "cpu",
+    optimizer=optim.SGD)
 
 # %%
 # The training loop
@@ -197,8 +214,7 @@ roc_auc = auc(fpr, tpr)
 # %%
 plt.figure()
 lw = 2
-plt.plot(fpr, tpr, color='darkorange',
-         lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
 plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
@@ -219,8 +235,8 @@ plt.show()
 # %%
 from itertools import islice
 
-misclassified_examples = train_images[
-                         net.predict(train_images.transpose((0, 3, 1, 2)).astype(np.float32)) != train_labels, ::]
+misclassified_examples = train_images[net.predict(train_images.transpose(
+    (0, 3, 1, 2)).astype(np.float32)) != train_labels, ::]
 
 plt.figure(figsize=(10, 10))
 for idx, im in enumerate(islice(misclassified_examples, 0, 8)):
