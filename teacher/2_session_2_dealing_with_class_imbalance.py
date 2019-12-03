@@ -27,7 +27,8 @@
 #   - The optimization parameters
 #   - The network architecture
 #
-# Remember that "deep learning" is still considered somewhat a black art so it's hard to know in advance what will work.
+# **Remember that "deep learning" is still considered somewhat a black art so it's hard to know in advance what will work.**
+#
 
 # %%
 # Put your imports here
@@ -38,21 +39,12 @@ import numpy as np
 TRAINVAL_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/trainval_aircraft_dataset.npz"
 
 # %% [markdown]
-# ## Q0. Downloading & splitting the dataset
+# ## Q0. Downloading the dataset
 #
 # You will get the following:
 #
 # - 45k images in training which you should use as training & validation
 # - 15k images in test, which you should only use to compute your final metrics on. Don't ever use this dataset for early stopping
-#
-# ![](https://i.stack.imgur.com/osBuF.png)
-#
-# Refer to this:
-# https://towardsdatascience.com/train-validation-and-test-sets-72cb40cba9e7
-#
-#
-# Q0.a: Download the dataset
-# Q0.b: Split the dataset in training, validation and test (you already have the test)
 
 # %%
 # Download the dataset
@@ -69,6 +61,8 @@ test_labels = trainval_dataset['test_labels']
 
 # %% [markdown]
 # ## Q1. During Session 1, you learnt how to set up your environment on GCP, train a basic CNN on a small training set and plot metrics. Now let's do it again !
+#
+# ### First run
 #
 # Once you have downloaded data, use the notebook from Session 1 to get:
 #
@@ -100,6 +94,8 @@ test_labels = trainval_dataset['test_labels']
 # https://www.datascienceblog.net/post/machine-learning/interpreting-roc-curves-auc/
 
 # %% [markdown]
+# ### Imbalanced dataset diagnostics
+#
 # e. Can you understand why PR curve are better than ROC curve for diagnosing model performance when dealing with imbalanced data ?
 #
 # f. Plot the ROC curve of your model as well as its AUC
@@ -114,7 +110,7 @@ test_labels = trainval_dataset['test_labels']
 #
 # Should you be lost, we refer you to the excellent "A Recipe for Training Neural Networks" article : https://karpathy.github.io/2019/04/25/recipe/
 #
-# ![image.png](slides/static/img/mlsystem.png)
+# ![image.png](docs/static/img/mlsystem.png)
 
 # %% [markdown]
 # ### a. Solving the imbalanced data problem
@@ -144,7 +140,7 @@ test_labels = trainval_dataset['test_labels']
 #
 # You can operate a modification on your structure and observe the effect on final metrics. Of course, remain consistent with credible models, cf Layer Patterns chapter on this "must view" course : http://cs231n.github.io/convolutional-networks/
 #
-# ![image.png](slides/static/img/comparison_architectures.png)
+# ![image.png](docs/static/img/comparison_architectures.png)
 
 # %%
 # Q2.b here
@@ -171,18 +167,32 @@ test_labels = trainval_dataset['test_labels']
 # a. Now that you have optimised your structure for your dataset, you will apply your model to the test dataset to see the final metrics. Plot all your metrics using the full imbalanced test set. Is it good enough ?
 # If you think so, you can apply it to new images using the sliding window technique with the 3rd notebook
 #
+#
+# Did it bring any improvements ?
+
+# %%
+# Q3a
+
+# %% [markdown]
 # b. If you're not satisfied with the output of your model, consider the following idea: Training a new model with the failures of your previous model.
 # Try the following:
 # - Get all the images with the "aircraft" label
 # - Get all the images with the "background" label where your best model was wrong (predicted aircraft), as well as some of the background where it was right.
 # - Train a new model or retrain your existing one on this dataset.
 #
-# Did it bring any improvements ?
-#
-# c . **!!!! SAVE YOUR MODEL !!!**
 
 # %%
-# Q3 here
+# Q3b
 
 # %% [markdown]
-# **Did you save your model ??** You will need it for the next notebook
+# c . **!!!! SAVE YOUR MODEL !!!**
+#
+# https://skorch.readthedocs.io/en/latest/user/save_load.html#saving-and-loading
+
+# %%
+# Q3c
+
+# %% [markdown]
+# **Have you saved your model ??** You will need it for the next notebook
+
+# %%

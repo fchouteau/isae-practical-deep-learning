@@ -202,6 +202,44 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 ![](static/img/large_tiles.png) <!-- .element height="40%" width="40%" -->
 
+<!--s-->
+
+## Diagnosing Classifier performance
+
+<!--v-->
+
+### The Confusion Matrix
+
+![](static/img/confusion_matrix.png)
+
+<!--v-->
+
+### The ROC Curve
+
+![](static/img/roc-curve-v2.png)
+
+<!--v-->
+
+### The PR Curve
+
+![](static/img/pr_curve.png) <!-- .element height="50%" width="50%" -->
+
+<!--v-->
+
+### Usage (Trade-off)
+
+![](static/img/ROC_space-2.png)  <!-- .element height="50%" width="50%" -->
+
+(this is a roc curve)
+
+<!--v-->
+
+### PR vs ROC
+
+- Plotting Interpretability Imbalanced Dataset vs ROC Curve ?
+- https://lukeoakdenrayner.wordpress.com/2018/01/07/the-philosophical-argument-for-using-roc-curves/
+- Both curve can be used to select your trade-off
+
 <!--v-->
 
 ### Sliding window ?
