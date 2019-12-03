@@ -204,11 +204,30 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 <!--v-->
 
-### PR vs ROC
+### Sliding window ?
 
-- Plotting Interpretability Imbalanced Dataset vs ROC Curve ?
-- https://lukeoakdenrayner.wordpress.com/2018/01/07/the-philosophical-argument-for-using-roc-curves/
-- Both curve can be used to select your trade-off
+- Training Image Size: 64x64, output = binary classification
+- Target Image Size: 512x512, target = detect & count aircrafts ?
+
+![](static/img/sliding_window.gif)
+
+<!--v-->
+
+### Outcomes
+
+- Tackle a dataset with huge class imbalance
+- Discover more advanced techniques for training CNNs
+- Discover Precision-Recall Curves
+- Discover applying models on larger images using the sliding window technique
+
+<!--v-->
+
+### Steps by steps
+
+1. Start/Restart your machine
+2. Follow notebooks 2 and 3
+
+![](https://i.stack.imgur.com/U9Iki.png)
 
 <!--s-->
 
@@ -242,30 +261,12 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 <!--v-->
 
-### Sliding window ?
+### PR vs ROC
 
-- Training Image Size: 64x64, output = binary classification
-- Target Image Size: 512x512, target = detect & count aircrafts ?
+- Plotting Interpretability Imbalanced Dataset vs ROC Curve ?
+- https://lukeoakdenrayner.wordpress.com/2018/01/07/the-philosophical-argument-for-using-roc-curves/
+- Both curve can be used to select your trade-off
 
-![](static/img/sliding_window.gif)
-
-<!--v-->
-
-### Outcomes
-
-- Tackle a dataset with huge class imbalance
-- Discover more advanced techniques for training CNNs
-- Discover Precision-Recall Curves
-- Discover applying models on larger images using the sliding window technique
-
-<!--v-->
-
-### Steps by steps
-
-1. Start/Restart your machine
-2. Follow notebooks 2 and 3
-
-![](https://i.stack.imgur.com/U9Iki.png)
 
 <!--s-->
 
