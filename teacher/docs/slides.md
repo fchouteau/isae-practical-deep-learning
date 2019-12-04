@@ -52,11 +52,9 @@ This is awesome ! Stop using powerpoint !
 
 - Ground segment software for earth observation satellites
 - Working daily with Deep Learning on satellite imagery
-    - Information extraction (object detection, change detection...)
-    - Image processing (clouds, image enhancement)
-    - Research stuff (image simulation, self-supervision...)
- 
-**BTW.... We have internships !** <!-- .element: class="fragment" data-fragment-index="1" -->
+    - Information extraction
+    - Image processing
+    - Research stuff
 
 <img src="static/img/airbus_logo_white.png" alt="" width="220px" height="44px" style="position: absolute; bottom: 0px; right: 0px; background:none; border:none; box-shadow:none;"/>
 
@@ -282,11 +280,11 @@ Welcome to the life of a deep learning engineer !
 
 <!--v-->
 
-Contact:  
+Contact (add at airbus dot com):
 
-florient.f.chouteau@airbus.com  
-matthieu.le-goff@airbus.com  
-marina.gruet@airbus.com  
+florient.f.chouteau
+matthieu.le-goff
+marina.gruet
 
 <!--v-->
 
