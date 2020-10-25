@@ -1,9 +1,15 @@
 .idea
 .vscode
 
+.ipynb_checkpoints
 *.ipynb_checkpoint
 
-__pycache__
+*.egg-info
 *.pyc
+__pycache__
 
+data
+workspace
+teacher/data
 
+!teacher/src/khumeia/data

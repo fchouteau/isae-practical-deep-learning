@@ -1,0 +1,13 @@
+geojson
+ipython
+joblib
+jupyter
+keras>=2.2.4
+numpy
+opencv-python
+pandas
+scikit-image
+scikit-learn
+scipy
+tqdm>=4.28.1
+loguru
