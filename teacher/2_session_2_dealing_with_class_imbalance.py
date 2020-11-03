@@ -36,7 +36,9 @@ import numpy as np
 
 # %%
 # Global variables
-TRAINVAL_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/trainval_aircraft_dataset.npz"
+TRAINVAL_DATASET_URL = (
+    "https://storage.googleapis.com/isae-deep-learning/trainval_aircraft_dataset.npz"
+)
 
 # %% [markdown]
 # ## Q0. Downloading the dataset
@@ -49,12 +51,12 @@ TRAINVAL_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/trainv
 # %%
 # Download the dataset
 ds = np.DataSource("/tmp/")
-f = ds.open(TRAINVAL_DATASET_URL, 'rb')
+f = ds.open(TRAINVAL_DATASET_URL, "rb")
 trainval_dataset = np.load(f)
-train_images = trainval_dataset['train_images']
-train_labels = trainval_dataset['train_labels']
-test_images = trainval_dataset['test_images']
-test_labels = trainval_dataset['test_labels']
+train_images = trainval_dataset["train_images"]
+train_labels = trainval_dataset["train_labels"]
+test_images = trainval_dataset["test_images"]
+test_labels = trainval_dataset["test_labels"]
 
 # %%
 # Split the dataset

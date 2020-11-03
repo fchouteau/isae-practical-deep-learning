@@ -5,8 +5,8 @@
 #     text_representation:
 #       extension: .py
 #       format_name: percent
-#       format_version: '1.2'
-#       jupytext_version: 1.2.4
+#       format_version: '1.3'
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -14,10 +14,10 @@
 # ---
 
 # %%
-# %matplotlib notebook
+# %matplotlib widget
 
 # %%
-import os
+from pathlib import Path
 import sys
 import numpy as np
 
@@ -28,10 +28,9 @@ sys.path = list(set(sys.path))
 
 # %%
 # setup env variable
-os.environ['TP_DATA'] = "./data/"
-raw_data_dir = os.path.join(os.environ.get("TP_DATA"), "raw")
-TRAINVAL_DATA_DIR = os.path.join(raw_data_dir, "trainval")
-EVAL_DATA_DIR = os.path.join(raw_data_dir, "eval")
+raw_data_dir = Path("./data/raw/").absolute()
+TRAINVAL_DATA_DIR = raw_data_dir / "trainval"
+EVAL_DATA_DIR = raw_data_dir / "eval"
 
 # %%
 from khumeia import helpers
@@ -48,34 +47,43 @@ TILE_SIZE = 512
 TILE_STRIDE = 512
 
 # %%
-eval_dataset.items = eval_dataset.items[:min(len(eval_dataset), MAX_ITEMS or len(eval_dataset))]
+eval_dataset.items = eval_dataset.items[
+    : min(len(eval_dataset), MAX_ITEMS or len(eval_dataset))
+]
 
 # %%
 from khumeia.roi.sliding_window import SlidingWindow
 from khumeia.roi.tiles_sampler import *
 
 # %%
-sliding_window = SlidingWindow(tile_size=TILE_SIZE, stride=TILE_STRIDE, margin_from_bounds=32, discard_background=False)
+sliding_window = SlidingWindow(
+    tile_size=TILE_SIZE,
+    stride=TILE_STRIDE,
+    margin_from_bounds=32,
+    discard_background=False,
+)
 
 # %%
-eval_large_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(eval_dataset,
-                                                                                  sliding_windows=[sliding_window],
-                                                                                  n_jobs=4)
+eval_large_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
+    eval_dataset, sliding_windows=[sliding_window], n_jobs=4
+)
 
 # %%
 test_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
-    nb_positive_tiles_max=15,
-    background_to_positive_ratio=1,
+    nb_positive_tiles_max=30,
+    background_to_positive_ratio=0.5,
     with_replacement=False,
     shuffle=True,
 )
 
-eval_large_tiles = helpers.dataset_generation.sample_tiles_from_candidates(eval_large_tiles,
-                                                                           tiles_samplers=[test_stratified_sampler])
+eval_large_tiles = helpers.dataset_generation.sample_tiles_from_candidates(
+    eval_large_tiles, tiles_samplers=[test_stratified_sampler]
+)
 
 # %%
-eval_large_tiles = helpers.dataset_generation.dump_dataset_tiles(tiles_dataset=eval_large_tiles,
-                                                                 items_dataset=eval_dataset)
+eval_large_tiles = helpers.dataset_generation.dump_dataset_tiles(
+    tiles_dataset=eval_large_tiles, items_dataset=eval_dataset
+)
 
 # %%
 eval_large_tiles = np.asarray([i[0] for i in eval_large_tiles.items])
@@ -85,8 +93,8 @@ print(eval_large_tiles.shape)
 
 # %%
 # Save as dict of nparrays
-data_dir = os.environ.get("TP_DATA")
-dataset_path = os.path.join(data_dir, "tiles_aircraft_dataset.npz")
+data_dir = Path("./data/").absolute()
+dataset_path = data_dir / "tiles_aircraft_dataset.npz"
 
 with open(dataset_path, "wb") as f:
     np.savez_compressed(f, eval_tiles=eval_large_tiles)
@@ -94,18 +102,23 @@ with open(dataset_path, "wb") as f:
 # %%
 # upload to gcp
 import subprocess
-cmd = "gsutil -m cp -r {} gs://isae-deep-learning/".format(os.path.abspath(dataset_path))
+import shlex
+
+cmd = "gsutil -m cp -r {} gs://isae-deep-learning/".format(dataset_path.absolute())
 print(cmd)
-subprocess.check_call(cmd, shell=True)
+subprocess.check_call(shlex.split(cmd), shell=True)
 # %% [markdown]
 # ## Reload and check everything is ok
 
 # %%
 # try to reload using numpy datasource
 ds = np.DataSource("/tmp/")
-f = ds.open("https://storage.googleapis.com/isae-deep-learning/tiles_aircraft_dataset.npz", 'rb')
+f = ds.open(
+    "https://storage.googleapis.com/fchouteau-isae-deep-learning/tiles_aircraft_dataset.npz",
+    "rb",
+)
 toy_dataset = np.load(f)
-eval_tiles = toy_dataset['eval_tiles']
+eval_tiles = toy_dataset["eval_tiles"]
 
 print(eval_tiles.shape)
 # %%
@@ -120,8 +133,10 @@ grid = np.zeros((grid_size * im_size, grid_size * im_size, 3)).astype(np.uint8)
 for i in range(grid_size):
     for j in range(grid_size):
         tile = eval_tiles[i * grid_size + j]
-        tile = cv2.rectangle(tile, (0, 0), (im_size, im_size), (255, 255, 255), thickness=2)
-        grid[i * im_size:(i + 1) * im_size, j * im_size:(j + 1) * im_size, :] = tile
+        tile = cv2.rectangle(
+            tile, (0, 0), (im_size, im_size), (255, 255, 255), thickness=2
+        )
+        grid[i * im_size : (i + 1) * im_size, j * im_size : (j + 1) * im_size, :] = tile
 
 # %%
 fig = plt.figure(figsize=(10, 10))
@@ -151,6 +166,7 @@ max_j = int(np.floor(float(im_w - tile_w) / stride_w)) + 1
 # %%
 import itertools
 from PIL import Image
+
 gif = []
 aircrafts_rect = []
 for yt, xt in itertools.product(range(max_i), range(max_j)):
@@ -169,9 +185,9 @@ for yt, xt in itertools.product(range(max_i), range(max_j)):
     for tl, br in aircrafts_rect:
         frame = cv2.rectangle(frame, tl, br, (0, 255, 0), thickness=2)
     if xt1 >= 256 and yt1 >= 256:
-        frame = frame[256:,256:,:]
+        frame = frame[256:, 256:, :]
         frame = Image.fromarray(frame)
         gif.append(frame)
 
 # %%
-gif[0].save('out.gif', save_all=True, append_images=gif[1:], duration=100, loop=0)
+gif[0].save("out.gif", save_all=True, append_images=gif[1:], duration=100, loop=0)

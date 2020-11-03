@@ -42,7 +42,9 @@ import numpy as np
 
 # %%
 # Configuration variables
-TOY_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/toy_aircraft_dataset.npz"
+TOY_DATASET_URL = (
+    "https://storage.googleapis.com/isae-deep-learning/toy_aircraft_dataset.npz"
+)
 
 # %% [markdown]
 # ## Downloading the dataset
@@ -60,13 +62,13 @@ TOY_DATASET_URL = "https://storage.googleapis.com/isae-deep-learning/toy_aircraf
 
 # %%
 ds = np.DataSource(destpath="/tmp/")
-f = ds.open(TOY_DATASET_URL, 'rb')
+f = ds.open(TOY_DATASET_URL, "rb")
 
 toy_dataset = np.load(f)
-train_images = toy_dataset['train_images']
-train_labels = toy_dataset['train_labels']
-test_images = toy_dataset['test_images']
-test_labels = toy_dataset['test_labels']
+train_images = toy_dataset["train_images"]
+train_labels = toy_dataset["train_labels"]
+test_images = toy_dataset["test_images"]
+test_labels = toy_dataset["test_labels"]
 
 # %% [markdown]
 # ### A bit about train-test
@@ -128,7 +130,7 @@ for i in range(grid_size):
         label = np.copy(train_labels[i * grid_size + j])
         color = (0, 255, 0) if label == 1 else (255, 0, 0)
         tile = cv2.rectangle(tile, (0, 0), (64, 64), color, thickness=2)
-        grid[i * 64:(i + 1) * 64, j * 64:(j + 1) * 64, :] = tile
+        grid[i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64, :] = tile
 
 fig = plt.figure(figsize=(10, 10))
 ax = fig.add_subplot(1, 1, 1)
@@ -192,7 +194,8 @@ net = NeuralNetClassifier(
     # Shuffle training data on each epoch
     iterator_train__shuffle=True,
     device="cuda" if torch.cuda.is_available() else "cpu",
-    optimizer=optim.SGD)
+    optimizer=optim.SGD,
+)
 
 # %%
 # The training loop
@@ -215,7 +218,9 @@ net.fit(train_images.transpose((0, 3, 1, 2)).astype(np.float32), train_labels)
 from sklearn.metrics import confusion_matrix
 
 print("Confusion matrix")
-confusion_matrix(train_labels, net.predict(train_images.transpose((0, 3, 1, 2)).astype(np.float32)))
+confusion_matrix(
+    train_labels, net.predict(train_images.transpose((0, 3, 1, 2)).astype(np.float32))
+)
 
 # %% [markdown]
 # ## ROC curve
@@ -229,19 +234,24 @@ from sklearn.metrics import roc_curve, auc
 
 # Compute ROC curve and ROC area for each class
 
-fpr, tpr, _ = roc_curve(test_labels, net.predict_proba(test_images.transpose((0, 3, 1, 2)).astype(np.float32))[:, 1])
+fpr, tpr, _ = roc_curve(
+    test_labels,
+    net.predict_proba(test_images.transpose((0, 3, 1, 2)).astype(np.float32))[:, 1],
+)
 roc_auc = auc(fpr, tpr)
 
 # %%
 plt.figure()
 lw = 2
-plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+plt.plot(
+    fpr, tpr, color="darkorange", lw=lw, label="ROC curve (area = %0.2f)" % roc_auc
+)
+plt.plot([0, 1], [0, 1], color="navy", lw=lw, linestyle="--")
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Receiver operating characteristic example')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.title("Receiver operating characteristic example")
 plt.legend(loc="lower right")
 plt.show()
 
@@ -256,8 +266,11 @@ plt.show()
 # %%
 from itertools import islice
 
-misclassified_examples = train_images[net.predict(train_images.transpose(
-    (0, 3, 1, 2)).astype(np.float32)) != train_labels, ::]
+misclassified_examples = train_images[
+    net.predict(train_images.transpose((0, 3, 1, 2)).astype(np.float32))
+    != train_labels,
+    ::,
+]
 
 plt.figure(figsize=(10, 10))
 for idx, im in enumerate(islice(misclassified_examples, 0, 8)):
@@ -350,14 +363,18 @@ class DatasetFromNumpy(torch.utils.data.Dataset):
 
 
 # %%
-train_transform = torchvision.transforms.Compose([
-    torchvision.transforms.ToPILImage(),
-    torchvision.transforms.RandomHorizontalFlip(p=0.5),
-    torchvision.transforms.ToTensor(),
-])
+train_transform = torchvision.transforms.Compose(
+    [
+        torchvision.transforms.ToPILImage(),
+        torchvision.transforms.RandomHorizontalFlip(p=0.5),
+        torchvision.transforms.ToTensor(),
+    ]
+)
 
 # %%
-train_ds = DatasetFromNumpy(array_x=train_images, array_y=train_labels, transform=train_transform)
+train_ds = DatasetFromNumpy(
+    array_x=train_images, array_y=train_labels, transform=train_transform
+)
 
 # %%
 # Compare effects of data augmentation
@@ -366,8 +383,8 @@ plt.imshow(img_orig)
 plt.show()
 # Get image from dataset. Note: it has been converted as a torch tensor in CHW format in float32 normalized !
 img, label = train_ds[0]
-img = (img.numpy() * 255.).astype(np.uint8)
-img = np.rollaxis(img, 0,3)
+img = (img.numpy() * 255.0).astype(np.uint8)
+img = np.rollaxis(img, 0, 3)
 plt.imshow(img)
 plt.show()
 

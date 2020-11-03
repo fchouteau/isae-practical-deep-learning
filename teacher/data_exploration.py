@@ -19,6 +19,7 @@
 # %%
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -32,10 +33,9 @@ sys.path = list(set(sys.path))
 
 # %%
 # setup env variable
-os.environ['TP_DATA'] = "./data/"
-raw_data_dir = os.path.join(os.environ.get("TP_DATA"), "raw")
-TRAINVAL_DATA_DIR = os.path.join(raw_data_dir, "trainval")
-EVAL_DATA_DIR = os.path.join(raw_data_dir, "eval")
+raw_data_dir = Path("./data/raw/").absolute()
+TRAINVAL_DATA_DIR = raw_data_dir / "trainval"
+EVAL_DATA_DIR = raw_data_dir / "eval"
 
 # %%
 # List files
@@ -48,9 +48,17 @@ image_ids = pd.read_csv(os.path.join(raw_data_dir, "trainval_ids.csv"))
 train_labels = pd.read_csv(os.path.join(raw_data_dir, "trainval_labels.csv"))
 
 # %%
-print("Number of images in train dataset \n{}".format(train_labels['image_id'].value_counts()))
-print("Description of labels \n{}".format(scipy.stats.describe(train_labels['image_id'].value_counts())))
-train_labels['size'].describe()
+print(
+    "Number of images in train dataset \n{}".format(
+        train_labels["image_id"].value_counts()
+    )
+)
+print(
+    "Description of labels \n{}".format(
+        scipy.stats.describe(train_labels["image_id"].value_counts())
+    )
+)
+train_labels["size"].describe()
 
 # %% [markdown]
 # ## Using Khumeia
@@ -87,7 +95,7 @@ def plot_histogram(dataset, n_bins=256):
     mean_hist_g = [0 for _ in range(n_bins)]
     mean_hist_b = [0 for _ in range(n_bins)]
 
-    for image_item in tqdm.tqdm(dataset, desc='computing histograms...'):
+    for image_item in tqdm.tqdm(dataset, desc="computing histograms..."):
         img = image_item.image
 
         hist_r, _ = np.histogram(img[:, :, 0], bins=n_bins, density=True)
@@ -101,9 +109,9 @@ def plot_histogram(dataset, n_bins=256):
     mean_hist_g /= len(image_ids)
     mean_hist_b /= len(image_ids)
 
-    plt.bar(np.arange(len(mean_hist_r)), mean_hist_r, color='red', width=1, alpha=0.5)
-    plt.bar(np.arange(len(mean_hist_g)), mean_hist_g, color='green', width=1, alpha=0.5)
-    plt.bar(np.arange(len(mean_hist_b)), mean_hist_b, color='blue', width=1, alpha=0.5)
+    plt.bar(np.arange(len(mean_hist_r)), mean_hist_r, color="red", width=1, alpha=0.5)
+    plt.bar(np.arange(len(mean_hist_g)), mean_hist_g, color="green", width=1, alpha=0.5)
+    plt.bar(np.arange(len(mean_hist_b)), mean_hist_b, color="blue", width=1, alpha=0.5)
     plt.show()
 
 
@@ -123,8 +131,11 @@ def describe_dataset(dataset):
 
     """
     for image_item in dataset:
-        print("item id: {} - shape: {} - nb labels:{}".format(image_item.image_id, image_item.shape,
-                                                              len(image_item.labels)))
+        print(
+            "item id: {} - shape: {} - nb labels:{}".format(
+                image_item.image_id, image_item.shape, len(image_item.labels)
+            )
+        )
 
 
 # %%

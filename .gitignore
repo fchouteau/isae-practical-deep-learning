@@ -2,14 +2,14 @@
 .vscode
 
 .ipynb_checkpoints
-*.ipynb_checkpoint
+teacher/*.ipynb
 
 *.egg-info
 *.pyc
 __pycache__
 
 data
-workspace
 teacher/data
-
 !teacher/src/khumeia/data
+
+workspace

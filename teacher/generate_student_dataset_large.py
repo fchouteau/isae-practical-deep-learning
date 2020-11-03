@@ -18,6 +18,7 @@
 
 # %%
 import os
+from pathlib import Path
 import sys
 import numpy as np
 
@@ -28,10 +29,9 @@ sys.path = list(set(sys.path))
 
 # %%
 # setup env variable
-os.environ['TP_DATA'] = "./data/"
-raw_data_dir = os.path.join(os.environ.get("TP_DATA"), "raw")
-TRAINVAL_DATA_DIR = os.path.join(raw_data_dir, "trainval")
-EVAL_DATA_DIR = os.path.join(raw_data_dir, "eval")
+raw_data_dir = Path("./data/raw/").absolute()
+TRAINVAL_DATA_DIR = raw_data_dir / "trainval"
+EVAL_DATA_DIR = raw_data_dir / "eval"
 
 # %%
 from khumeia import helpers
@@ -50,28 +50,42 @@ DENSE_TILE_STRIDE = 16
 MARGIN = 16
 
 # %%
-trainval_dataset.items = trainval_dataset.items[:min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))]
-train_dataset, test_dataset = helpers.dataset_generation.split_dataset(trainval_dataset, proportion=0.75)
+trainval_dataset.items = trainval_dataset.items[
+    : min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))
+]
+train_dataset, test_dataset = helpers.dataset_generation.split_dataset(
+    trainval_dataset, proportion=0.75
+)
 
 # %%
 from khumeia.roi.sliding_window import SlidingWindow
 
 # %%
-sliding_window_dense = SlidingWindow(tile_size=TILE_SIZE,
-                                     stride=DENSE_TILE_STRIDE,
-                                     margin_from_bounds=MARGIN,
-                                     discard_background=True)
-sliding_window_sparse = SlidingWindow(tile_size=TILE_SIZE,
-                                      stride=SPARSE_TILE_STRIDE,
-                                      margin_from_bounds=MARGIN,
-                                      discard_background=False)
+sliding_window_dense = SlidingWindow(
+    tile_size=TILE_SIZE,
+    stride=DENSE_TILE_STRIDE,
+    margin_from_bounds=MARGIN,
+    discard_background=True,
+)
+sliding_window_sparse = SlidingWindow(
+    tile_size=TILE_SIZE,
+    stride=SPARSE_TILE_STRIDE,
+    margin_from_bounds=MARGIN,
+    discard_background=False,
+)
 
 # %%
 train_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
-    train_dataset, sliding_windows=[sliding_window_dense, sliding_window_sparse], n_jobs=4)
+    train_dataset,
+    sliding_windows=[sliding_window_dense, sliding_window_sparse],
+    n_jobs=4,
+)
 # %%
 test_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
-    test_dataset, sliding_windows=[sliding_window_dense, sliding_window_sparse], n_jobs=4)
+    test_dataset,
+    sliding_windows=[sliding_window_dense, sliding_window_sparse],
+    n_jobs=4,
+)
 
 # %% [markdown]
 # ## Big Dataset Generation
@@ -84,6 +98,7 @@ NB_POSITIVE_TEST_TILES = 1600
 
 # %%
 from khumeia.roi.tiles_sampler import *
+
 # %%
 train_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
     nb_positive_tiles_max=NB_POSITIVE_TRAIN_TILES,
@@ -92,8 +107,9 @@ train_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
     shuffle=True,
 )
 
-train_tiles_sampled = helpers.dataset_generation.sample_tiles_from_candidates(train_tiles,
-                                                                              tiles_samplers=[train_stratified_sampler])
+train_tiles_sampled = helpers.dataset_generation.sample_tiles_from_candidates(
+    train_tiles, tiles_samplers=[train_stratified_sampler]
+)
 
 # %%
 test_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
@@ -103,15 +119,19 @@ test_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
     shuffle=True,
 )
 
-test_tiles_sampled = helpers.dataset_generation.sample_tiles_from_candidates(test_tiles,
-                                                                             tiles_samplers=[test_stratified_sampler])
+test_tiles_sampled = helpers.dataset_generation.sample_tiles_from_candidates(
+    test_tiles, tiles_samplers=[test_stratified_sampler]
+)
 
 # %%
-train_array = helpers.dataset_generation.dump_dataset_tiles(tiles_dataset=train_tiles_sampled,
-                                                            items_dataset=train_dataset)
+train_array = helpers.dataset_generation.dump_dataset_tiles(
+    tiles_dataset=train_tiles_sampled, items_dataset=train_dataset
+)
 
 # %%
-test_array = helpers.dataset_generation.dump_dataset_tiles(tiles_dataset=test_tiles_sampled, items_dataset=test_dataset)
+test_array = helpers.dataset_generation.dump_dataset_tiles(
+    tiles_dataset=test_tiles_sampled, items_dataset=test_dataset
+)
 
 # %%
 train_images = np.asarray([i[0] for i in train_array.items])[:40000]
@@ -147,30 +167,39 @@ data_dir = os.environ.get("TP_DATA")
 dataset_path = os.path.join(data_dir, "trainval_aircraft_dataset.npz")
 
 with open(dataset_path, "wb") as f:
-    np.savez_compressed(f,
-                        train_images=train_images,
-                        train_labels=train_labels,
-                        test_images=test_images,
-                        test_labels=test_labels)
+    np.savez_compressed(
+        f,
+        train_images=train_images,
+        train_labels=train_labels,
+        test_images=test_images,
+        test_labels=test_labels,
+    )
 
 # %%
 # upload to gcp
 import subprocess
-cmd = "gsutil -m cp -r {} gs://isae-deep-learning/".format(os.path.abspath(dataset_path))
+import shlex
+
+cmd = "gsutil -m cp -r {} gs://isae-deep-learning/".format(
+    os.path.abspath(dataset_path)
+)
 print(cmd)
-subprocess.check_call(cmd, shell=True)
+subprocess.check_call(shlex.split(cmd), shell=True)
 # %% [markdown]
 # ## Reload and check everything is ok
 
 # %%
 # try to reload using numpy datasource
 ds = np.DataSource("/tmp/")
-f = ds.open("https://storage.googleapis.com/isae-deep-learning/trainval_aircraft_dataset.npz", 'rb')
+f = ds.open(
+    "https://storage.googleapis.com/isae-deep-learning/trainval_aircraft_dataset.npz",
+    "rb",
+)
 toy_dataset = np.load(f)
-train_images = toy_dataset['train_images']
-train_labels = toy_dataset['train_labels']
-test_images = toy_dataset['test_images']
-test_labels = toy_dataset['test_labels']
+train_images = toy_dataset["train_images"]
+train_labels = toy_dataset["train_labels"]
+test_images = toy_dataset["test_images"]
+test_labels = toy_dataset["test_labels"]
 print(train_images.shape)
 
 # %%
@@ -195,7 +224,7 @@ for i in range(grid_size):
         label = train_labels[idx]
         color = (0, 255, 0) if label == 1 else (255, 0, 0)
         tile = cv2.rectangle(tile, (0, 0), (64, 64), color, thickness=2)
-        grid[i * 64:(i + 1) * 64, j * 64:(j + 1) * 64, :] = tile
+        grid[i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64, :] = tile
 
 # %%
 fig = plt.figure(figsize=(10, 10))
@@ -214,7 +243,7 @@ for i in range(grid_size):
         label = test_labels[idx]
         color = (0, 255, 0) if label == 1 else (255, 0, 0)
         tile = cv2.rectangle(tile, (0, 0), (64, 64), color, thickness=2)
-        grid_2[i * 64:(i + 1) * 64, j * 64:(j + 1) * 64, :] = tile
+        grid_2[i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64, :] = tile
 
 # %%
 fig = plt.figure(figsize=(10, 10))

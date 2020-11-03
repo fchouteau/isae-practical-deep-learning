@@ -33,7 +33,9 @@ import numpy as np
 
 # %%
 # Global variables
-tiles_dataset_url = "https://storage.googleapis.com/isae-deep-learning/tiles_aircraft_dataset.npz"
+tiles_dataset_url = (
+    "https://storage.googleapis.com/isae-deep-learning/tiles_aircraft_dataset.npz"
+)
 
 # %% [markdown]
 # ## Download the dataset
@@ -41,9 +43,9 @@ tiles_dataset_url = "https://storage.googleapis.com/isae-deep-learning/tiles_air
 # %%
 # Download data
 ds = np.DataSource("/tmp/")
-f = ds.open(tiles_dataset_url, 'rb')
+f = ds.open(tiles_dataset_url, "rb")
 eval_tiles = np.load(f)
-eval_tiles = eval_tiles['eval_tiles']
+eval_tiles = eval_tiles["eval_tiles"]
 
 # %% [markdown]
 # ## Data Exploration
