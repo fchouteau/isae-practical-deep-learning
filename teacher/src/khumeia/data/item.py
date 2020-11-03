@@ -1,16 +1,18 @@
 import json
-import os
+from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
-
 from khumeia.roi.groundtruth import Groundtruth
 from khumeia.utils import io_utils
 
 
+@dataclass
 class Item:
     """
     An item is a container for an image and its labels
     """
+
     @property
     def key(self):
         raise NotImplementedError
@@ -28,27 +30,26 @@ class Item:
         raise NotImplementedError
 
 
+@dataclass
 class SatelliteImage(Item):
     """
     Contains the necessary information to define a satellite images
     Contains image id, image file and label file
-    Contains image and labels as properties (cached via joblib to avoid loading the same image n times and to avoid ram overflow)
+    Contains image and labels as properties
+    (cached via joblib to avoid loading the same image n times and to avoid ram overflow)
     The labels are automatically parsed as BoundingBoxes
-    """
-    def __init__(self, image_id: str, image_file: str, label_file: str):
-        """
 
-        Args:
-            image_id: the image identifier (generally the filename...)
-            image_file: path to the .jpg image file
-            label_file: path to the .json label file
-        """
-        self.image_id = image_id
-        self.image_file = image_file
-        self.label_file = label_file
+    image_id: the image identifier (generally the filename...)
+    image_file: path to the .jpg image file
+    label_file: path to the .json label file
+    """
+
+    image_id: str
+    image_file: Path
+    label_file: Path
 
     @classmethod
-    def from_image_id_and_path(cls, image_id: str, path: str) -> 'SatelliteImage':
+    def from_image_id_and_path(cls, image_id: str, path: Path) -> "SatelliteImage":
         """
 
         Args:
@@ -58,8 +59,8 @@ class SatelliteImage(Item):
         Returns:
 
         """
-        image_file = os.path.join(path, '{}.jpg'.format(image_id))
-        label_file = os.path.join(path, '{}.json'.format(image_id))
+        image_file = path / "{}.jpg".format(image_id)
+        label_file = path / "{}.json".format(image_id)
         return cls(image_id=image_id, image_file=image_file, label_file=label_file)
 
     @property
@@ -107,10 +108,12 @@ class SatelliteImage(Item):
 
     def __str__(self):
         d = dict()
-        d['class'] = self.__class__.__name__
-        d['image_shape'] = self.shape
-        d['nb_labels'] = len(self.labels)
-        d.update(self.__dict__)
+        d["class"] = self.__class__.__name__
+        d["image_id"] = self.image_id
+        d["image_shape"] = self.shape
+        d["nb_labels"] = len(self.labels)
+        d["image_file"] = str(self.image_file)
+        d["label_file"] = str(self.label_file)
         return json.dumps(d, indent=4)
 
     def __repr__(self):

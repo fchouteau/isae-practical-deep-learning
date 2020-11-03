@@ -1,67 +1,97 @@
-"""
-Downloading data
-"""
-import os
+import json
+import shlex
 import subprocess
+from pathlib import Path
 
+import pandas as pd
 from khumeia import LOGGER
 
-ROOT_URL = "https://storage.googleapis.com/isae-deep-learning"
+__all__ = ["download_data", "make_image_ids", "make_labels"]
 
 
-def _download_data(archive="tp_isae_data.tar.gz", data_dir=None, check_dir=None):
-    """
+def download_data(raw_data_dir: Path):
+    LOGGER.info("Downloading data to {}".format(str(raw_data_dir)))
+    cmds = [
+        "gsutil -m rsync -r gs://planespotting-data-public/USGS_public_domain_photos/ {}".format(
+            str(raw_data_dir / "trainval")
+        ),
+        "gsutil -m rsync -r gs://planespotting-data-public/USGS_public_domain_photos_eval/ {}".format(
+            str(raw_data_dir / "eval")
+        ),
+    ]
 
-    Args:
-        archive:
-        data_dir:
+    cmds = [shlex.split(cmd) for cmd in cmds]
 
-    Returns:
+    outliers = [
+        "USGS_TUC1l.jpg",
+        "USGS_TUC1l.json",
+        "USGS_TUC1s.jpg",
+        "USGS_TUC1s.json",
+        "USGS_TUC2s.jpg",
+        "USGS_TUC2s.json",
+        "USGS_TUC3s.jpg",
+        "USGS_TUC3s.json",
+        "USGS_TUC4s.jpg",
+        "USGS_TUC4s.json",
+        "USGS_DMA.jpg",
+        "USGS_DMA2.jpg",
+    ]
+    raw_data_dir.mkdir(exist_ok=True)
+    (raw_data_dir / "trainval").mkdir(exist_ok=True)
+    (raw_data_dir / "eval").mkdir(exist_ok=True)
 
-    """
-    assert data_dir is not None, "please specify a download dir or better specify TP_DATA env variable"
-
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    LOGGER.info("Downloading data from {} to {}".format(archive, data_dir))
-
-    if not os.path.exists(os.path.join(data_dir, archive)):
-        # Download tar gz
-        LOGGER.info("Downloading {}".format("{}/{}").format(ROOT_URL, archive))
-        cmd = ["curl", "-X", "GET", "{}/{}".format(ROOT_URL, archive), "--output", os.path.join(data_dir, archive)]
-        subprocess.check_call(cmd)
-    if check_dir is None or not os.path.exists(os.path.join(data_dir, check_dir)):
-        # Untar it
-        LOGGER.info("Extracting tar gz")
-        cmd = ["tar", "-zxvf", os.path.join(data_dir, archive), "-C", data_dir]
-        subprocess.check_call(cmd)
-
-
-def download_train_data(data_dir=None):
-    """
-    Download the raw training data to data dir and extracts
-    Args:
-        data_dir:
-
-    Returns:
-
-    """
-    data_dir = data_dir or os.path.expandvars(os.environ.get("TP_DATA"))
-    LOGGER.info("Downloading training data")
-    _download_data(archive="tp_isae_train_data.tar.gz", data_dir=data_dir, check_dir="raw/trainval")
-    LOGGER.info("Done. Your training data is located here {}\n".format(os.path.join(data_dir, "raw", "trainval")))
+    for cmd in cmds:
+        subprocess.check_call(cmd, shell=True)
+    for outlier in outliers:
+        try:
+            (raw_data_dir / "trainval" / outlier).unlink(missing_ok=True)
+        except FileNotFoundError:
+            pass
+        try:
+            (raw_data_dir / "eval" / outlier).unlink(missing_ok=True)
+        except FileNotFoundError:
+            pass
 
 
-def download_eval_data(data_dir=None):
-    """
-    Download the raw eval data to data dir and extracts
-    Args:
-        data_dir:
+def make_labels(raw_data_dir: Path, fold="trainval"):
+    df = pd.read_csv(raw_data_dir / "{}_ids.csv".format(fold))
+    trainval_labels = []
+    eval_labels = []
+    image_ids = list(df["image_id"].unique())
 
-    Returns:
+    for image_id in image_ids:
+        fold = list(df[df["image_id"] == image_id]["fold"])[0]
+        image_path = raw_data_dir / fold / f"{image_id}.jpg"
+        label_path = image_path.with_suffix(".json")
 
-    """
-    data_dir = data_dir or os.path.expandvars(os.environ.get("TP_DATA"))
-    LOGGER.info("Downloading evaluation data")
-    _download_data(archive="tp_isae_eval_data.tar.gz", data_dir=data_dir, check_dir="raw/eval")
-    LOGGER.info("Done. Your data is located here {}\n".format(os.path.join(data_dir, "raw", "eval")))
+        with open(label_path, "r") as f:
+            labels = json.load(f)
+
+        for label in labels["markers"]:
+            x, y, w = label["x"], label["y"], label["w"]
+            if fold == "trainval":
+                trainval_labels.append({"image_id": image_id, "x": x, "y": y, "size": w})
+            else:
+                eval_labels.append({"image_id": image_id, "x": x, "y": y, "size": w})
+
+    pd.DataFrame(trainval_labels).to_csv(
+        raw_data_dir / f"{fold}_labels.csv",
+        index=False,
+        index_label=None,
+    )
+
+
+def make_image_ids(raw_data_dir: Path):
+    train_images = (raw_data_dir / "trainval").glob("*.jpg")
+    dataset = []
+    for image_file in train_images:
+        image_id = image_file.stem
+        dataset.append({"image_id": image_id, "fold": "trainval"})
+    pd.DataFrame(dataset).to_csv(raw_data_dir / "trainval_ids.csv", index_label=None, index=False)
+
+    eval_images = (raw_data_dir / "eval").glob("*.jpg")
+    dataset = []
+    for image_file in eval_images:
+        image_id = image_file.stem
+        dataset.append({"image_id": image_id, "fold": "eval"})
+    pd.DataFrame(dataset).to_csv(raw_data_dir / "eval_ids.csv", index_label=None, index=False)

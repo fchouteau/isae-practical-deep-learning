@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=40.8.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+target-version = ['py36', 'py37', 'py38']
+skip-string-normalization = true
+line-length = 120
+exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | examples
+    | vendored
+    | demos
+  )/
+)
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+src_paths = ["ifa_viewer_proto"]
+
+[tool.pytest]
+testpaths = "tests"
+addopts = "--cov=khumeia --cov-report term-missing --verbose"
+
+[tool.flake8]
+max-line-length = 120

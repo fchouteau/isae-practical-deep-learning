@@ -6,6 +6,7 @@ class Predictor:
 
     It supports batching if you set your batch_size as > 1 (it will then call `predict_on_tiles`)
     """
+
     def __init__(self, batch_size=1):
         self.batch_size = batch_size
 

@@ -16,12 +16,17 @@ def test_bbox():
 def test_bbox_int():
     box1 = BoundingBox(4, 4, 16, 16)
     box2 = BoundingBox(2, 2, 1, 1)
-    box3 = BoundingBox(7, 7, 4, 4, )
+    box3 = BoundingBox(
+        7,
+        7,
+        4,
+        4,
+    )
     assert not box1.intersects(box2)
     assert box1.intersects(box3)
 
-    assert box1.intersection(box2).area == 0.
-    assert box1.intersection(box3).area > 0.
+    assert box1.intersection(box2).area == 0.0
+    assert box1.intersection(box3).area > 0.0
 
 
 def test_bbox_iou():
@@ -33,12 +38,13 @@ def test_bbox_iou():
     assert box1.iou(box2) == 1.0
     assert box1.iou(box3) == 2 * 2 / (16 * 16)
     assert box1.iou(box4) == 4 * 4 / (16 * 16 + 4 * 4 - 4 * 4)
-    assert box3.iou(box4) == 0.
+    assert box3.iou(box4) == 0.0
 
 
 def test_geojson():
     try:
         import shapely.geometry
+
         box1 = BoundingBox(4, 4, 16, 16)
         assert geojson.FeatureCollection(features=[box1])
         print(shapely.geometry.shape(box1))

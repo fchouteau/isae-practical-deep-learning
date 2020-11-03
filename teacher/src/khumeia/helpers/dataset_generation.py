@@ -2,13 +2,12 @@
 Generating dataset helpers
 """
 import glob
-import os
 import random
 import shutil
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
-
 from khumeia import LOGGER
 from khumeia.data.dataset import Dataset
 from khumeia.data.item import SatelliteImage
@@ -22,10 +21,18 @@ try:
 except ImportError:
     joblib = None
 
-random.seed(2019)
+random.seed(2020)
+
+__all__ = [
+    "items_dataset_from_path",
+    "split_dataset",
+    "generate_candidate_tiles_from_items",
+    "sample_tiles_from_candidates",
+    "dump_dataset_tiles",
+]
 
 
-def items_dataset_from_path(path: Optional[str] = None) -> [SatelliteImage]:
+def items_dataset_from_path(path: Optional[Path] = None) -> [SatelliteImage]:
     """
     Get a list of Satellite Images items from path
 
@@ -37,11 +44,10 @@ def items_dataset_from_path(path: Optional[str] = None) -> [SatelliteImage]:
     assert path is not None, "Please set folder variable, likely ${TP_DATA}/raw/trainval/"
 
     LOGGER.info("Looking in {}".format(path))
-    items = []
-    list_images = glob.glob(os.path.join(path, "*.jpg"))
+    list_images = path.glob("*.jpg")
 
-    def _parse_image(image_file):
-        image_id = os.path.splitext(os.path.basename(image_file))[0]
+    def _parse_image(image_file: Path):
+        image_id = image_file.stem
         item = SatelliteImage.from_image_id_and_path(image_id, path)
         # Read the when initialising to put data into cache
         # LOGGER.info("Found item {}".format(item.image_id))
@@ -73,14 +79,15 @@ def split_dataset(dataset: Dataset, proportion=0.75, shuffle=True) -> (Dataset, 
     if shuffle:
         random.shuffle(dataset.items)
 
-    dataset_1 = dataset.apply(lambda items: items[:int(proportion * len(items))])
-    dataset_2 = dataset.apply(lambda items: items[int(proportion * len(items)):])
+    dataset_1 = dataset.apply(lambda items: items[: int(proportion * len(items))])
+    dataset_2 = dataset.apply(lambda items: items[int(proportion * len(items)) :])
 
     return dataset_1, dataset_2
 
 
-def generate_candidate_tiles_from_items(items_dataset: Dataset, sliding_windows: [SlidingWindow],
-                                        n_jobs: int = 1) -> Dataset:
+def generate_candidate_tiles_from_items(
+    items_dataset: Dataset, sliding_windows: [SlidingWindow], n_jobs: int = 1
+) -> Dataset:
     """
         High level helper function
         Apply a sliding window over each satellite image
@@ -102,7 +109,8 @@ def generate_candidate_tiles_from_items(items_dataset: Dataset, sliding_windows:
     for sliding_window in sliding_windows:
         LOGGER.info(sliding_window)
         tiles_dataset = tiles_dataset.extend(
-            items_dataset.flatmap(sliding_window, desc="Applying sliding window", n_jobs=n_jobs))
+            items_dataset.flatmap(sliding_window, desc="Applying sliding window", n_jobs=n_jobs)
+        )
 
     tiles_dataset = tiles_dataset.apply(lambda items: list(set(items)))
     LOGGER.info("State of dataset")
@@ -137,11 +145,13 @@ def sample_tiles_from_candidates(tiles_dataset: Dataset, tiles_samplers: [TilesS
     return sampled_dataset
 
 
-def dump_dataset_tiles(tiles_dataset: Dataset,
-                       items_dataset: Dataset,
-                       output_dir=None,
-                       remove_first=False,
-                       save_format="jpg") -> Dataset:
+def dump_dataset_tiles(
+    tiles_dataset: Dataset,
+    items_dataset: Dataset,
+    output_dir: Optional[Path] = None,
+    remove_first=False,
+    save_format="jpg",
+) -> Dataset:
     """
         High level helper function
         Actually generates training images from the dataset.sampled_tiles (= regions of interest)

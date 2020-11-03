@@ -21,7 +21,7 @@ def get_label_from_bboxes_center(tile, bboxes, strict=True, margin_from_bounds=0
     return "background"
 
 
-def get_label_from_bboxes_ioa(tile, bboxes, ioa_threshold=0.):
+def get_label_from_bboxes_ioa(tile, bboxes, ioa_threshold=0.0):
     """
     Intersection over area mode
     Args:

@@ -9,9 +9,9 @@ class BoundingBox:
     (0,0) is top left, x is right and 2nd dim, y is bottom and 1st dim
     So an image is a matrix of shape (height, width, 3) where the three channels are r,g,b
     """
+
     def __init__(self, x_min: int, y_min: int, height: int, width: int):
-        """
-        """
+        """"""
         self.height = int(height)
         self.width = int(width)
         self.x_min = int(x_min)
@@ -35,10 +35,10 @@ class BoundingBox:
     @property
     def __geo_interface__(self):
         return {
-            'type':
-            'Polygon',
-            'coordinates': [[(self.x_min, self.y_min), (self.x_max, self.y_min), (self.x_max, self.y_max),
-                             (self.x_min, self.y_max)]]
+            'type': 'Polygon',
+            'coordinates': [
+                [(self.x_min, self.y_min), (self.x_max, self.y_min), (self.x_max, self.y_max), (self.x_min, self.y_max)]
+            ],
         }
 
     @property
@@ -79,7 +79,7 @@ class BoundingBox:
         Returns: (x,y) the center (float) of the bbox
 
         """
-        return (self.x_min + self.x_max) / 2., (self.y_min + self.y_max) / 2.
+        return (self.x_min + self.x_max) / 2.0, (self.y_min + self.y_max) / 2.0
 
     def contains_point(self, point: (int, int), strict=False, margin=0) -> bool:
         """
@@ -107,10 +107,12 @@ class BoundingBox:
         Returns: bool
 
         """
-        return bbox.x_min >= self.x_min and \
-               bbox.x_max <= self.x_max and \
-               bbox.y_min >= self.x_min and \
-               bbox.y_max <= self.y_max
+        return (
+            bbox.x_min >= self.x_min
+            and bbox.x_max <= self.x_max
+            and bbox.y_min >= self.x_min
+            and bbox.y_max <= self.y_max
+        )
 
     def intersects(self, bbox: 'BoundingBox') -> bool:
         """
@@ -157,7 +159,7 @@ class BoundingBox:
 
         """
         if not self.intersects(bbox):
-            return 0.
+            return 0.0
         else:
             x_min = max(self.x_min, bbox.x_min)
             y_min = max(self.y_min, bbox.y_min)

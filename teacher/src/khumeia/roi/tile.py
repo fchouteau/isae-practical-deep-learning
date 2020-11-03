@@ -1,8 +1,7 @@
 import itertools
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 import numpy as np
-
 from khumeia.roi.bounding_box import BoundingBox
 from khumeia.roi.groundtruth import Groundtruth
 from khumeia.utils import roi_utils
@@ -13,30 +12,34 @@ class Tile(BoundingBox):
     Tiles are bbox that represent a location on a large image.
     Functionnaly different than groundtruth
     """
-    def __init__(self,
-                 item_id: str,
-                 x_min: int,
-                 y_min: int,
-                 width: int,
-                 height: int,
-                 padding: int = 0,
-                 data_transform_fn: Optional[Callable] = None):
-        """
-        """
+
+    def __init__(
+        self,
+        item_id: str,
+        x_min: int,
+        y_min: int,
+        width: int,
+        height: int,
+        padding: int = 0,
+        data_transform_fn: Optional[Callable] = None,
+    ):
+        """"""
         super(Tile, self).__init__(x_min=x_min, y_min=y_min, width=width, height=height)
         self.item_id = item_id
         self.padding = int(padding)
         self.data_transform_fn = data_transform_fn
 
     @classmethod
-    def get_tiles_for_item(cls,
-                           item_id: str,
-                           im_shape: [int],
-                           tile_shape: [int],
-                           padding=0,
-                           stride=1.,
-                           offset=(0, 0),
-                           data_transform_fn=None) -> ['Tile']:
+    def get_tiles_for_item(
+        cls,
+        item_id: str,
+        im_shape: [int],
+        tile_shape: [int],
+        padding=0,
+        stride=1.0,
+        offset=(0, 0),
+        data_transform_fn=None,
+    ) -> ['Tile']:
         """
 
         Args:
@@ -64,13 +67,15 @@ class Tile(BoundingBox):
         tiles = []
 
         for i, j in itertools.product(range(max_i), range(max_j)):
-            tile = cls(item_id=item_id,
-                       x_min=off_w + j * stride_w,
-                       y_min=off_h + i * stride_h,
-                       width=tile_w,
-                       height=tile_h,
-                       padding=padding,
-                       data_transform_fn=data_transform_fn)
+            tile = cls(
+                item_id=item_id,
+                x_min=off_w + j * stride_w,
+                y_min=off_h + i * stride_h,
+                width=tile_w,
+                height=tile_h,
+                padding=padding,
+                data_transform_fn=data_transform_fn,
+            )
             tiles.append(tile)
         return tiles
 
@@ -115,7 +120,7 @@ class Tile(BoundingBox):
         # Compute offset on numpy array
         x_tl_o, y_tl_o, x_br_o, y_br_o = x_tl_w - x_tl, y_tl_w - y_tl, x_br_w - x_br, y_br_w - y_br
 
-        data[y_tl_o:(y_br_o or None), x_tl_o:(x_br_o or None), :] = image[y_tl_w:y_br_w, x_tl_w:x_br_w, :]
+        data[y_tl_o : (y_br_o or None), x_tl_o : (x_br_o or None), :] = image[y_tl_w:y_br_w, x_tl_w:x_br_w, :]
 
         if self.data_transform_fn is None:
             return data
@@ -165,71 +170,8 @@ class LabelledTile(Tile):
     """
     A tile with label assigned
     """
+
     def __init__(self, item_id, x_min, y_min, width, height, padding=0, label=None, data_transform_fn=None):
-        """
-
-        Args:
-            item_id:
-            x_min:
-            y_min:
-            width:
-            height: 
-            padding:
-            label:
-            data_transform_fn:
-        """
-        super(LabelledTile, self).__init__(item_id,
-                                           x_min,
-                                           y_min,
-                                           width,
-                                           height,
-                                           padding=padding,
-                                           data_transform_fn=data_transform_fn)
-        self.label = label
-
-    @classmethod
-    def from_tile_and_label(cls, tile, label):
-        return cls(item_id=tile.item_id,
-                   x_min=tile.x_min,
-                   y_min=tile.y_min,
-                   width=tile.width,
-                   height=tile.height,
-                   padding=tile.padding,
-                   label=label,
-                   data_transform_fn=tile.data_transform_fn)
-
-    @classmethod
-    def from_tile_and_groundtruths(cls,
-                                   tile: Tile,
-                                   groundtruths: [Groundtruth],
-                                   label_assignment_mode="center",
-                                   ioa_threshold=0.5,
-                                   margin_from_bounds=0):
-        if label_assignment_mode == "center":
-            label = roi_utils.get_label_from_bboxes_center(tile,
-                                                           groundtruths,
-                                                           strict=True,
-                                                           margin_from_bounds=margin_from_bounds)
-        else:
-            label = roi_utils.get_label_from_bboxes_ioa(tile, groundtruths, ioa_threshold=ioa_threshold)
-
-        return cls.from_tile_and_label(tile, label)
-
-
-class PredictionTile(LabelledTile):
-    """
-    A labelled tile that contains a prediction...
-    """
-    def __init__(self,
-                 item_id,
-                 x_min,
-                 y_min,
-                 width,
-                 height,
-                 padding=0,
-                 predicted_label=None,
-                 label=None,
-                 data_transform_fn=None):
         """
 
         Args:
@@ -242,14 +184,66 @@ class PredictionTile(LabelledTile):
             label:
             data_transform_fn:
         """
-        super(PredictionTile, self).__init__(item_id,
-                                             x_min,
-                                             y_min,
-                                             width,
-                                             height,
-                                             padding=padding,
-                                             label=label,
-                                             data_transform_fn=data_transform_fn)
+        super(LabelledTile, self).__init__(
+            item_id, x_min, y_min, width, height, padding=padding, data_transform_fn=data_transform_fn
+        )
+        self.label = label
+
+    @classmethod
+    def from_tile_and_label(cls, tile, label):
+        return cls(
+            item_id=tile.item_id,
+            x_min=tile.x_min,
+            y_min=tile.y_min,
+            width=tile.width,
+            height=tile.height,
+            padding=tile.padding,
+            label=label,
+            data_transform_fn=tile.data_transform_fn,
+        )
+
+    @classmethod
+    def from_tile_and_groundtruths(
+        cls,
+        tile: Tile,
+        groundtruths: [Groundtruth],
+        label_assignment_mode="center",
+        ioa_threshold=0.5,
+        margin_from_bounds=0,
+    ):
+        if label_assignment_mode == "center":
+            label = roi_utils.get_label_from_bboxes_center(
+                tile, groundtruths, strict=True, margin_from_bounds=margin_from_bounds
+            )
+        else:
+            label = roi_utils.get_label_from_bboxes_ioa(tile, groundtruths, ioa_threshold=ioa_threshold)
+
+        return cls.from_tile_and_label(tile, label)
+
+
+class PredictionTile(LabelledTile):
+    """
+    A labelled tile that contains a prediction...
+    """
+
+    def __init__(
+        self, item_id, x_min, y_min, width, height, padding=0, predicted_label=None, label=None, data_transform_fn=None
+    ):
+        """
+
+        Args:
+            item_id:
+            x_min:
+            y_min:
+            width:
+            height:
+            padding:
+            label:
+            data_transform_fn:
+        """
+        super(PredictionTile, self).__init__(
+            item_id, x_min, y_min, width, height, padding=padding, label=label, data_transform_fn=data_transform_fn
+        )
         self.predicted_label = predicted_label
 
     @classmethod
@@ -263,15 +257,17 @@ class PredictionTile(LabelledTile):
         Returns:
 
         """
-        return cls(labelled_tile.item_id,
-                   labelled_tile.x_min,
-                   labelled_tile.y_min,
-                   labelled_tile.width,
-                   labelled_tile.height,
-                   padding=labelled_tile.padding,
-                   label=labelled_tile.label,
-                   predicted_label=prediction,
-                   data_transform_fn=labelled_tile.data_transform_fn)
+        return cls(
+            labelled_tile.item_id,
+            labelled_tile.x_min,
+            labelled_tile.y_min,
+            labelled_tile.width,
+            labelled_tile.height,
+            padding=labelled_tile.padding,
+            label=labelled_tile.label,
+            predicted_label=prediction,
+            data_transform_fn=labelled_tile.data_transform_fn,
+        )
 
     @property
     def is_correct(self):

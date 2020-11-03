@@ -1,8 +1,10 @@
-import os
+from pathlib import Path
 
 from khumeia.data.item import SatelliteImage
-from khumeia.roi.tile import Tile, LabelledTile
+from khumeia.roi.tile import LabelledTile, Tile
 from khumeia.utils import io_utils
+
+__all__ = ["ImageItemTileDumper", "NpArrayTileDumper"]
 
 
 class ItemTileDumper:
@@ -18,20 +20,20 @@ class ItemTileDumper:
 
 
 class ImageItemTileDumper(ItemTileDumper):
-    def __init__(self, item, output_dir, save_format="jpg"):
+    def __init__(self, item, output_dir: Path, save_format="jpg"):
         super(ImageItemTileDumper, self).__init__(item=item)
-        self.output_dir = output_dir
+        self.output_dir = Path(output_dir)
         self.save_format = save_format
 
     def dump_tiles_for_item(self, tile: LabelledTile):
         if tile.item_id == self.item.key:
-            os.makedirs(os.path.join(self.output_dir, tile.label), exist_ok=True)
+            (self.output_dir / tile.label).mkdir(exist_ok=True)
 
             tile_data = tile.get_data(self.image)
             tile_basename = "{}_{}.{}".format(self.item.key, tile.key, self.save_format)
-            io_utils.imsave(os.path.join(self.output_dir, tile.label, tile_basename), tile_data)
+            io_utils.imsave(self.output_dir / tile.label / tile_basename, tile_data)
 
-            return os.path.join(self.output_dir, tile.label, tile_basename), tile.label
+            return self.output_dir / tile.label / tile_basename, tile.label
         else:
             return None
 

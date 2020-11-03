@@ -1,8 +1,0 @@
-{
-  "tests": [
-    "shapely",
-    "pytest",
-    "pytest-cov",
-    "flake8"
-  ]
-}

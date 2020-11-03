@@ -1,9 +1,8 @@
-from tqdm.autonotebook import tqdm
-
 from khumeia import LOGGER
 from khumeia.data.dataset import Dataset
 from khumeia.inference.predictor import Predictor
 from khumeia.roi.tile import PredictionTile
+from tqdm.auto import tqdm
 
 
 class InferenceEngine:
@@ -12,6 +11,7 @@ class InferenceEngine:
 
     ![](https://cdn-images-1.medium.com/max/1600/1*uLk0eLyS8sYCqXTgEYcO6w.png)
     """
+
     def __init__(self, sliding_windows, predictor):
         """
 
@@ -50,7 +50,7 @@ class InferenceEngine:
         image = item.image
 
         def _batch(items):
-            return [items[i:i + self.predictor.batch_size] for i in range(0, len(items), self.predictor.batch_size)]
+            return [items[i : i + self.predictor.batch_size] for i in range(0, len(items), self.predictor.batch_size)]
 
         batches = tiles.apply(_batch)
 
@@ -61,8 +61,11 @@ class InferenceEngine:
             batch_data = list(map(lambda tile: tile.get_data(image), batch))
             batch_results = self.predictor.predict_on_batch(batch_data)
             batch_results = list(
-                map(lambda tpl: PredictionTile.from_labelled_tile_and_prediction(tpl[0], tpl[1]),
-                    zip(batch, batch_results)))
+                map(
+                    lambda tpl: PredictionTile.from_labelled_tile_and_prediction(tpl[0], tpl[1]),
+                    zip(batch, batch_results),
+                )
+            )
 
             return batch_results
 

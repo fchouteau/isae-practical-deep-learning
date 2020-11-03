@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from khumeia.roi.tile import Tile, LabelledTile
+from khumeia.roi.tile import LabelledTile, Tile
 
 
 def filter_tiles_by_item(tiles_list, item_key):

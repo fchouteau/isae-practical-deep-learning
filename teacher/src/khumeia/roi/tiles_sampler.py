@@ -2,13 +2,22 @@ import json
 import random
 
 import numpy as np
-
 from khumeia import LOGGER
 from khumeia.roi.tile import Tile
 from khumeia.utils import roi_list_utils
 
-random.seed(2019)
-np.random.seed(2019)
+random.seed(2020)
+np.random.seed(2020)
+
+__all__ = [
+    "TilesSampler",
+    "RandomSampler",
+    "RandomPerItemSampler",
+    "StratifiedSampler",
+    "StratifiedPerItemSampler",
+    "BackgroundToPositiveRatioSampler",
+    "BackgroundToPositiveRatioPerItemSampler",
+]
 
 
 class TilesSampler:
@@ -43,6 +52,7 @@ class TilesSampler:
         ```
 
     """
+
     def __init__(self, with_replacement=False, shuffle=True):
         """
 
@@ -65,6 +75,7 @@ class TilesSampler:
         Returns:
             The sampled list of tiles
         """
+        nb_tiles_max = int(nb_tiles_max)
         nb_candidates = len(tiles)
         tiles_idx = list(range(nb_candidates))
 
@@ -76,7 +87,7 @@ class TilesSampler:
 
         return [tiles[tiles_idx[idx % nb_candidates]] for idx in range(nb_tiles_max)]
 
-    def sample_tiles_from_candidates(self, candidate_tiles: [Tile]) -> ['Tile']:
+    def sample_tiles_from_candidates(self, candidate_tiles: [Tile]) -> ["Tile"]:
         """
         Apply the sampling logic of this class to a list of `candidates`
         Args:
@@ -87,12 +98,12 @@ class TilesSampler:
         """
         raise NotImplementedError
 
-    def __call__(self, candidate_tiles: [Tile]) -> ['Tile']:
+    def __call__(self, candidate_tiles: [Tile]) -> ["Tile"]:
         return self.sample_tiles_from_candidates(candidate_tiles)
 
     def __str__(self):
         d = dict()
-        d['class'] = self.__class__.__name__
+        d["class"] = self.__class__.__name__
         d.update(self.__dict__)
         return json.dumps(d, indent=4)
 
@@ -104,6 +115,7 @@ class RandomSampler(TilesSampler):
     Note: you can target a specific label for extracting only n images from this label
     This is useful if you want to stratify manually instead of using more complex samplers
     """
+
     def __init__(self, nb_tiles_max=None, with_replacement=False, shuffle=True, target_label=None):
         """
 
@@ -143,10 +155,13 @@ class RandomPerItemSampler(RandomSampler):
     Note: you can target a specific label for extracting only n tiles from this label.
     This is useful if you want to stratify manually instead of using more complex samplers
     """
+
     def __init__(self, nb_tiles_max=None, with_replacement=False, shuffle=True, target_label=None):
-        super(RandomPerItemSampler, self).__init__(nb_tiles_max=nb_tiles_max,
-                                                   with_replacement=with_replacement,
-                                                   shuffle=shuffle)
+        super(RandomPerItemSampler, self).__init__(
+            nb_tiles_max=nb_tiles_max,
+            with_replacement=with_replacement,
+            shuffle=shuffle,
+        )
         self.target_label = target_label
 
     def sample_tiles_from_candidates(self, candidate_tiles):
@@ -171,6 +186,7 @@ class StratifiedSampler(TilesSampler):
     Tries to balance labels (globally) to the limit of the number of available tiles / label
     If with_replacement, ensure that a balanced sample is exactly attained
     """
+
     def __init__(self, nb_tiles_max=None, with_replacement=False, shuffle=True):
         super(StratifiedSampler, self).__init__(with_replacement=with_replacement, shuffle=shuffle)
         self.nb_tiles_max = nb_tiles_max
@@ -195,10 +211,13 @@ class StratifiedPerItemSampler(StratifiedSampler):
     Tries to balance labels (globally) to the limit of the number of available tiles / label / item
     If with_replacement, ensure that a balanced sample is exactly attained
     """
+
     def __init__(self, nb_tiles_max=None, with_replacement=False, shuffle=True):
-        super(StratifiedPerItemSampler, self).__init__(nb_tiles_max=nb_tiles_max,
-                                                       with_replacement=with_replacement,
-                                                       shuffle=shuffle)
+        super(StratifiedPerItemSampler, self).__init__(
+            nb_tiles_max=nb_tiles_max,
+            with_replacement=with_replacement,
+            shuffle=shuffle,
+        )
 
     def sample_tiles_from_candidates(self, candidate_tiles):
         sampled_tiles = []
@@ -219,8 +238,14 @@ class BackgroundToPositiveRatioSampler(TilesSampler):
     Samples randomly `nb_positive_tiles_max` in non background classes, - while balancing items
     Then samples `background_to_positive_ratio` * `nb_positive_tiles_max` in background tiles
     """
-    def __init__(self, background_to_positive_ratio=1, nb_positive_tiles_max=None, with_replacement=False,
-                 shuffle=True):
+
+    def __init__(
+        self,
+        background_to_positive_ratio=1,
+        nb_positive_tiles_max=None,
+        with_replacement=False,
+        shuffle=True,
+    ):
         super(BackgroundToPositiveRatioSampler, self).__init__(with_replacement=with_replacement, shuffle=shuffle)
         self.background_to_positive_ratio = background_to_positive_ratio
         self.nb_positive_tiles_max = nb_positive_tiles_max
@@ -242,7 +267,7 @@ class BackgroundToPositiveRatioSampler(TilesSampler):
 
         # Sample tiles
         candidate_tiles_ = roi_list_utils.filter_tiles_by_label(candidate_tiles, "background")
-        nb_bg_tiles = self.background_to_positive_ratio * (self.nb_positive_tiles_max or len(sampled_tiles))
+        nb_bg_tiles = int(self.background_to_positive_ratio * (self.nb_positive_tiles_max or len(sampled_tiles)))
         sampled_tiles.extend(self._sample_n_tiles_from_list(candidate_tiles_, nb_bg_tiles))
 
         return sampled_tiles
@@ -254,13 +279,20 @@ class BackgroundToPositiveRatioPerItemSampler(BackgroundToPositiveRatioSampler):
     Then samples `background_to_positive_ratio` * `nb_positive_tiles_max` in background tiles
     Do it per item
     """
-    def __init__(self, background_to_positive_ratio=1, nb_positive_tiles_max=None, with_replacement=False,
-                 shuffle=True):
-        super(BackgroundToPositiveRatioPerItemSampler,
-              self).__init__(background_to_positive_ratio=background_to_positive_ratio,
-                             nb_positive_tiles_max=nb_positive_tiles_max,
-                             with_replacement=with_replacement,
-                             shuffle=shuffle)
+
+    def __init__(
+        self,
+        background_to_positive_ratio=1,
+        nb_positive_tiles_max=None,
+        with_replacement=False,
+        shuffle=True,
+    ):
+        super(BackgroundToPositiveRatioPerItemSampler, self).__init__(
+            background_to_positive_ratio=background_to_positive_ratio,
+            nb_positive_tiles_max=nb_positive_tiles_max,
+            with_replacement=with_replacement,
+            shuffle=shuffle,
+        )
 
     def sample_tiles_from_candidates(self, candidate_tiles):
         sampled_tiles = []
