@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -6,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.7.1
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -14,7 +15,16 @@
 # ---
 
 # %%
+# %load_ext autoreload
+# %autoreload 2
+
+# %%
 # %matplotlib widget
+
+# %% [markdown]
+# # Génération du jeu de données "toy"
+#
+# Jeu de données équilibré et images mélangées
 
 # %%
 import sys
@@ -27,9 +37,10 @@ sys.path = list(set(sys.path))
 
 # %%
 # setup env variable
-raw_data_dir = Path("./data/raw/").absolute()
+raw_data_dir = Path("./data/raw/").resolve()
 TRAINVAL_DATA_DIR = raw_data_dir / "trainval"
 EVAL_DATA_DIR = raw_data_dir / "eval"
+TRAINVAL_DATA_DIR
 
 # %% [markdown]
 # ## Using Khumeia
@@ -44,6 +55,15 @@ trainval_dataset = helpers.dataset_generation.items_dataset_from_path(TRAINVAL_D
 # ## Dataset parsing using khumeia
 
 # %%
+import random
+
+from matplotlib import pyplot as plt
+
+from khumeia.helpers.visualisation import draw_item_with_tiles
+from khumeia.roi.tiles_generator import CenteredTiles, RandomTiles
+from khumeia.utils.roi_list_utils import filter_tiles_by_item
+
+# %%
 MAX_ITEMS = None
 TILE_SIZE = 64
 SPARSE_TILE_STRIDE = 64
@@ -51,42 +71,35 @@ DENSE_TILE_STRIDE = 32
 MARGIN = 16
 
 # %%
-trainval_dataset.items = trainval_dataset.items[
-    : min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))
-]
+trainval_dataset.items = trainval_dataset.items[: min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))]
 
 # %%
-from khumeia.roi.sliding_window import CenteredTilesGenerator, SlidingWindow
-
-# %%
-sliding_window_dense = SlidingWindow(
+random_tiles = RandomTiles(
     tile_size=TILE_SIZE,
-    stride=DENSE_TILE_STRIDE,
+    num_tiles=1024,
     margin_from_bounds=MARGIN,
-    discard_background=True,
-)
-sliding_window_sparse = SlidingWindow(
-    tile_size=TILE_SIZE,
-    stride=SPARSE_TILE_STRIDE,
-    margin_from_bounds=MARGIN,
-    discard_background=False,
 )
 
-centered_tiles = CenteredTilesGenerator(
+centered_tiles = CenteredTiles(
     tile_size=TILE_SIZE,
-    stride=SPARSE_TILE_STRIDE,
 )
 
 # %%
 trainval_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
     trainval_dataset,
-    sliding_windows=[centered_tiles],
+    sliding_windows=[centered_tiles, random_tiles],
     n_jobs=4,
 )
+# %% [markdown]
+# Display one image
+
 # %%
-from khumeia.utils.roi_list_utils import filter_tiles_by_item
-from khumeia.helpers.visualisation import draw_item_with_tiles
-from matplotlib import pyplot as plt
+_item_ids = list(set(item.item_id for item in trainval_tiles))
+print(_item_ids)
+
+# %%
+_item_id = random.randint(0, len(_item_ids) - 1)
+# _item_id = "USGS_CVG"
 
 _tiles = filter_tiles_by_item(trainval_tiles, "USGS_CVG")
 _item = trainval_dataset.filter(lambda item: item.image_id == "USGS_CVG")[0]
@@ -101,11 +114,14 @@ plt.show()
 # Let's generate our first dataset
 
 # %%
-NB_FG_TRAINVAL_TILES = 1500
+NB_FG_TRAINVAL_TILES = 1792
 TRAIN_TEST_SPLIT = 0.75
 
 # %%
+import random
+
 import numpy as np
+
 from khumeia.roi.tiles_sampler import *
 
 # %%
@@ -146,16 +162,12 @@ train_fg_images, test_fg_images = (
     trainval_fg_images[: int(TRAIN_TEST_SPLIT * n_fg)],
     trainval_fg_images[int(TRAIN_TEST_SPLIT * n_fg) :],
 )
-train_fg_labels, test_fg_labels = [1 for _ in train_fg_images], [
-    1 for _ in test_fg_images
-]
+train_fg_labels, test_fg_labels = [1 for _ in train_fg_images], [1 for _ in test_fg_images]
 train_bg_images, test_bg_images = (
     trainval_bg_images[: int(TRAIN_TEST_SPLIT * n_bg)],
     trainval_bg_images[int(TRAIN_TEST_SPLIT * n_bg) :],
 )
-train_bg_labels, test_bg_labels = [0 for _ in train_bg_images], [
-    0 for _ in test_bg_images
-]
+train_bg_labels, test_bg_labels = [0 for _ in train_bg_images], [0 for _ in test_bg_images]
 
 train_images = np.concatenate([train_fg_images, train_bg_images], axis=0)
 train_labels = np.concatenate([train_fg_labels, train_bg_labels], axis=0)
@@ -180,8 +192,7 @@ print(test_labels.shape)
 
 # %%
 # Save as dict of nparrays
-data_dir = os.environ.get("TP_DATA")
-dataset_path = os.path.join(data_dir, "toy_aircraft_dataset.npz")
+dataset_path = Path("./data") / "toy_aircraft_dataset.npz"
 
 with open(dataset_path, "wb") as f:
     np.savez_compressed(
@@ -197,11 +208,9 @@ with open(dataset_path, "wb") as f:
 import shlex
 import subprocess
 
-cmd = "gsutil -m cp -r {} gs://isae-deep-learning/".format(
-    os.path.abspath(dataset_path)
-)
+cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(str(dataset_path.resolve()))
 print(cmd)
-subprocess.check_call(shlex.split(cmd), shell=True)
+subprocess.check_call(cmd, shell=True)
 # %% [markdown]
 # ## Reload and check everything is ok
 

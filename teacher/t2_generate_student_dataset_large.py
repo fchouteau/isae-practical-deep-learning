@@ -5,8 +5,8 @@
 #     text_representation:
 #       extension: .py
 #       format_name: percent
-#       format_version: '1.2'
-#       jupytext_version: 1.2.4
+#       format_version: '1.3'
+#       jupytext_version: 1.7.1
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -14,13 +14,15 @@
 # ---
 
 # %%
-# %matplotlib notebook
+# %load_ext autoreload
+# %autoreload 2
 
 # %%
-import os
-from pathlib import Path
+# %matplotlib widget
+
+# %%
 import sys
-import numpy as np
+from pathlib import Path
 
 # %%
 # add khumeia
@@ -29,18 +31,25 @@ sys.path = list(set(sys.path))
 
 # %%
 # setup env variable
-raw_data_dir = Path("./data/raw/").absolute()
+raw_data_dir = Path("./data/raw/").resolve()
 TRAINVAL_DATA_DIR = raw_data_dir / "trainval"
 EVAL_DATA_DIR = raw_data_dir / "eval"
+
+# %% [markdown]
+# ## Using Khumeia
 
 # %%
 from khumeia import helpers
 
 # %%
 trainval_dataset = helpers.dataset_generation.items_dataset_from_path(TRAINVAL_DATA_DIR)
+eval_dataset = helpers.dataset_generation.items_dataset_from_path(EVAL_DATA_DIR)
 
 # %% [markdown]
 # ## Dataset parsing using khumeia
+
+# %%
+from khumeia.roi.tiles_generator import CenteredTiles, RandomTiles, SlidingWindow
 
 # %%
 MAX_ITEMS = None
@@ -50,41 +59,43 @@ DENSE_TILE_STRIDE = 16
 MARGIN = 16
 
 # %%
-trainval_dataset.items = trainval_dataset.items[
-    : min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))
-]
-train_dataset, test_dataset = helpers.dataset_generation.split_dataset(
-    trainval_dataset, proportion=0.75
-)
+trainval_dataset.items = trainval_dataset.items[: min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))]
+
+train_dataset, test_dataset = helpers.dataset_generation.split_dataset(trainval_dataset, proportion=0.8)
+test_dataset = test_dataset.extend(eval_dataset)
 
 # %%
-from khumeia.roi.sliding_window import SlidingWindow
+print("TRAIN :{}".format(list(set(item.key for item in train_dataset.items))))
+print("VAL: {}".format(list(set(item.key for item in test_dataset.items))))
 
 # %%
 sliding_window_dense = SlidingWindow(
-    tile_size=TILE_SIZE,
-    stride=DENSE_TILE_STRIDE,
-    margin_from_bounds=MARGIN,
-    discard_background=True,
+    tile_size=TILE_SIZE, stride=DENSE_TILE_STRIDE, margin_from_bounds=MARGIN, discard_background=True
 )
+
 sliding_window_sparse = SlidingWindow(
-    tile_size=TILE_SIZE,
-    stride=SPARSE_TILE_STRIDE,
-    margin_from_bounds=MARGIN,
-    discard_background=False,
+    tile_size=TILE_SIZE, stride=SPARSE_TILE_STRIDE, margin_from_bounds=MARGIN, discard_background=False
 )
+
+random_tiles = RandomTiles(tile_size=TILE_SIZE, num_tiles=1024, margin_from_bounds=MARGIN)
+
+centered_tiles = CenteredTiles(tile_size=TILE_SIZE)
+
+sliding_windows = [sliding_window_dense, sliding_window_sparse, random_tiles, centered_tiles]
 
 # %%
 train_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
-    train_dataset,
-    sliding_windows=[sliding_window_dense, sliding_window_sparse],
-    n_jobs=4,
+    train_dataset, sliding_windows=sliding_windows, n_jobs=4
 )
 # %%
+random_tiles = RandomTiles(tile_size=TILE_SIZE, num_tiles=10 * 1024, margin_from_bounds=MARGIN)
+
+centered_tiles = CenteredTiles(tile_size=TILE_SIZE)
+
+test_sliding_windows = [random_tiles, centered_tiles]
+
 test_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
-    test_dataset,
-    sliding_windows=[sliding_window_dense, sliding_window_sparse],
-    n_jobs=4,
+    test_dataset, sliding_windows=test_sliding_windows, n_jobs=4
 )
 
 # %% [markdown]
@@ -92,12 +103,16 @@ test_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
 # Let's generate our first dataset
 
 # %%
-SAMPLING_RATIO = 9
-NB_POSITIVE_TRAIN_TILES = 4100
-NB_POSITIVE_TEST_TILES = 1600
+import os
+
+import numpy as np
+
+from khumeia.roi.tiles_sampler import *
 
 # %%
-from khumeia.roi.tiles_sampler import *
+SAMPLING_RATIO = 9
+NB_POSITIVE_TRAIN_TILES = 5120
+NB_POSITIVE_TEST_TILES = 512
 
 # %%
 train_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
@@ -129,21 +144,19 @@ train_array = helpers.dataset_generation.dump_dataset_tiles(
 )
 
 # %%
-test_array = helpers.dataset_generation.dump_dataset_tiles(
-    tiles_dataset=test_tiles_sampled, items_dataset=test_dataset
-)
+test_array = helpers.dataset_generation.dump_dataset_tiles(tiles_dataset=test_tiles_sampled, items_dataset=test_dataset)
 
 # %%
-train_images = np.asarray([i[0] for i in train_array.items])[:40000]
-train_labels = np.asarray([i[1] for i in train_array.items])[:40000]
+train_images = np.asarray([i[0] for i in train_array.items])
+train_labels = np.asarray([i[1] for i in train_array.items])
 
 # %%
 print(train_images.shape)
 print(train_labels.shape)
 
 # %%
-test_images = np.asarray([i[0] for i in test_array.items])[:15000]
-test_labels = np.asarray([i[1] for i in test_array.items])[:15000]
+test_images = np.asarray([i[0] for i in test_array.items])
+test_labels = np.asarray([i[1] for i in test_array.items])
 
 # %%
 print(test_images.shape)
@@ -163,8 +176,7 @@ test_labels = test_labels[test_indexes]
 
 # %%
 # Save as dict of nparrays
-data_dir = os.environ.get("TP_DATA")
-dataset_path = os.path.join(data_dir, "trainval_aircraft_dataset.npz")
+dataset_path = Path("./data") / "trainval_aircraft_dataset.npz"
 
 with open(dataset_path, "wb") as f:
     np.savez_compressed(
@@ -177,14 +189,12 @@ with open(dataset_path, "wb") as f:
 
 # %%
 # upload to gcp
-import subprocess
 import shlex
+import subprocess
 
-cmd = "gsutil -m cp -r {} gs://isae-deep-learning/".format(
-    os.path.abspath(dataset_path)
-)
+cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(os.path.abspath(dataset_path))
 print(cmd)
-subprocess.check_call(shlex.split(cmd), shell=True)
+subprocess.check_call(cmd, shell=True)
 # %% [markdown]
 # ## Reload and check everything is ok
 
@@ -192,14 +202,15 @@ subprocess.check_call(shlex.split(cmd), shell=True)
 # try to reload using numpy datasource
 ds = np.DataSource("/tmp/")
 f = ds.open(
-    "https://storage.googleapis.com/isae-deep-learning/trainval_aircraft_dataset.npz",
+    "https://storage.googleapis.com/fchouteau-isae-deep-learning/trainval_aircraft_dataset.npz",
     "rb",
 )
-toy_dataset = np.load(f)
-train_images = toy_dataset["train_images"]
-train_labels = toy_dataset["train_labels"]
-test_images = toy_dataset["test_images"]
-test_labels = toy_dataset["test_labels"]
+large_dataset = np.load(f)
+
+train_images = large_dataset["train_images"]
+train_labels = large_dataset["train_labels"]
+test_images = large_dataset["test_images"]
+test_labels = large_dataset["test_labels"]
 print(train_images.shape)
 
 # %%
@@ -210,8 +221,8 @@ np.unique(test_labels, return_counts=True)
 
 # %%
 # plot them
-from matplotlib import pyplot as plt
 import cv2
+from matplotlib import pyplot as plt
 
 # %%
 grid_size = 8

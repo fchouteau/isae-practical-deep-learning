@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -6,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.7.1
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -14,12 +15,25 @@
 # ---
 
 # %%
-# %matplotlib widget
+# %load_ext autoreload
+# %autoreload 2
 
 # %%
-from pathlib import Path
+# %matplotlib widget
+
+# %% [markdown]
+# ## Génération des tuiles d'évaluation
+#
+# On génère des tuiles 512 x 512 pour le dernier notebook
+
+# %%
 import sys
+from pathlib import Path
+
 import numpy as np
+from pathy import Pathy
+
+from khumeia import helpers
 
 # %%
 # add khumeia
@@ -28,12 +42,11 @@ sys.path = list(set(sys.path))
 
 # %%
 # setup env variable
-raw_data_dir = Path("./data/raw/").absolute()
+raw_data_dir = Path("./data/raw/").resolve()
 TRAINVAL_DATA_DIR = raw_data_dir / "trainval"
 EVAL_DATA_DIR = raw_data_dir / "eval"
 
-# %%
-from khumeia import helpers
+REMOTE_DATASET_DIR = Pathy("gs://fchouteau-isae-deep-learning")
 
 # %%
 eval_dataset = helpers.dataset_generation.items_dataset_from_path(EVAL_DATA_DIR)
@@ -42,18 +55,16 @@ eval_dataset = helpers.dataset_generation.items_dataset_from_path(EVAL_DATA_DIR)
 # ## Dataset parsing using khumeia
 
 # %%
+from khumeia.roi.tiles_generator import SlidingWindow
+from khumeia.roi.tiles_sampler import *
+
+# %%
 MAX_ITEMS = None
 TILE_SIZE = 512
 TILE_STRIDE = 512
 
 # %%
-eval_dataset.items = eval_dataset.items[
-    : min(len(eval_dataset), MAX_ITEMS or len(eval_dataset))
-]
-
-# %%
-from khumeia.roi.sliding_window import SlidingWindow
-from khumeia.roi.tiles_sampler import *
+eval_dataset.items = eval_dataset.items[: min(len(eval_dataset), MAX_ITEMS or len(eval_dataset))]
 
 # %%
 sliding_window = SlidingWindow(
@@ -68,9 +79,12 @@ eval_large_tiles = helpers.dataset_generation.generate_candidate_tiles_from_item
     eval_dataset, sliding_windows=[sliding_window], n_jobs=4
 )
 
+# %% [markdown]
+# Samples n tiles per satellite image with a ratio of 2/1 for tiles containing aircrafts and tile not containing aircrafts
+
 # %%
 test_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
-    nb_positive_tiles_max=30,
+    nb_positive_tiles_max=24,
     background_to_positive_ratio=0.5,
     with_replacement=False,
     shuffle=True,
@@ -93,7 +107,7 @@ print(eval_large_tiles.shape)
 
 # %%
 # Save as dict of nparrays
-data_dir = Path("./data/").absolute()
+data_dir = Path("./data/").resolve()
 dataset_path = data_dir / "tiles_aircraft_dataset.npz"
 
 with open(dataset_path, "wb") as f:
@@ -101,12 +115,12 @@ with open(dataset_path, "wb") as f:
 
 # %%
 # upload to gcp
-import subprocess
 import shlex
+import subprocess
 
-cmd = "gsutil -m cp -r {} gs://isae-deep-learning/".format(dataset_path.absolute())
+cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(dataset_path.resolve())
 print(cmd)
-subprocess.check_call(shlex.split(cmd), shell=True)
+subprocess.check_call(cmd, shell=True)
 # %% [markdown]
 # ## Reload and check everything is ok
 
@@ -123,8 +137,8 @@ eval_tiles = toy_dataset["eval_tiles"]
 print(eval_tiles.shape)
 # %%
 # plot them
-from matplotlib import pyplot as plt
 import cv2
+from matplotlib import pyplot as plt
 
 # %%
 grid_size = 4
@@ -133,9 +147,7 @@ grid = np.zeros((grid_size * im_size, grid_size * im_size, 3)).astype(np.uint8)
 for i in range(grid_size):
     for j in range(grid_size):
         tile = eval_tiles[i * grid_size + j]
-        tile = cv2.rectangle(
-            tile, (0, 0), (im_size, im_size), (255, 255, 255), thickness=2
-        )
+        tile = cv2.rectangle(tile, (0, 0), (im_size, im_size), (255, 255, 255), thickness=2)
         grid[i * im_size : (i + 1) * im_size, j * im_size : (j + 1) * im_size, :] = tile
 
 # %%
@@ -146,6 +158,11 @@ plt.show()
 
 # %% [markdown]
 # ## Generate sliding window gif
+
+# %%
+import itertools
+
+from PIL import Image
 
 # %%
 t = eval_tiles[12]
@@ -164,9 +181,6 @@ max_i = int(np.floor(float(im_h - tile_h) / stride_h)) + 1
 max_j = int(np.floor(float(im_w - tile_w) / stride_w)) + 1
 
 # %%
-import itertools
-from PIL import Image
-
 gif = []
 aircrafts_rect = []
 for yt, xt in itertools.product(range(max_i), range(max_j)):
@@ -191,3 +205,8 @@ for yt, xt in itertools.product(range(max_i), range(max_j)):
 
 # %%
 gif[0].save("out.gif", save_all=True, append_images=gif[1:], duration=100, loop=0)
+
+# %% [markdown]
+# Sliding window demo 
+#
+# ![sw](out.gif)
