@@ -109,7 +109,7 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 - using pytorch <!-- .element: class="fragment" data-fragment-index="2" -->
 - using google colaboratory and its GPUs <!-- .element: class="fragment" data-fragment-index="3" -->
 
-![colab](https://miro.medium.com/max/776/1*Lad06lrjlU9UZgSTHUoyfA.png) <!-- .element:  width="25%" height="25%"-->
+![colab](https://miro.medium.com/max/776/1*Lad06lrjlU9UZgSTHUoyfA.png) <!-- .element:  class="fragment" data-fragment-index="4" width="25%" height="25%"-->
 
 <!--s-->
 
@@ -160,7 +160,6 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 ![](static/img/toy_dataset.png) <!-- .element height="40%" width="40%" -->
 
-
 <!--v-->
 
 ### Let's go ! 
@@ -170,6 +169,14 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 3. At the end, you will be less guided
 4. Profit !
 5. If you're done... go to Session 2 !
+
+<!--v-->
+
+### Colab Guide
+
+<video data-autoplay  controls width="720">
+    <source src="https://storage.googleapis.com/fchouteau-isae-deep-learning/static/colab_guide.mp4" type="video/mp4">
+</video>
 
 <!--s-->
 

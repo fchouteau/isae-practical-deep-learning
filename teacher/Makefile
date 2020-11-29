@@ -3,15 +3,13 @@ serve-slides:
 				-w \
 				--disable-auto-open \
 				--template static/template/reveal.html \
-#				--css static/css/evo.css \
-#				--css static/css/reset.css \
 				--static-dirs static
 
 build-slides:
+	rm -rf ../docs || true
 	cd docs; reveal-md . \
+				--static ../../docs \
 				--template static/template/reveal.html \
-#				--css static/css/evo.css \
-#				--css static/css/reset.css \
 				--static-dirs static
 
 build-pdf:
