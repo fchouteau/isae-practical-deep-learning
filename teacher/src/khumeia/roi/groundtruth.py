@@ -1,5 +1,7 @@
 from khumeia.roi.bounding_box import BoundingBox
 
+__all__ = ["Groundtruth"]
+
 
 class Groundtruth(BoundingBox):
     """

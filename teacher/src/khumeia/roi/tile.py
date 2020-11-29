@@ -6,11 +6,13 @@ from khumeia.roi.bounding_box import BoundingBox
 from khumeia.roi.groundtruth import Groundtruth
 from khumeia.utils import roi_utils
 
+__all__ = ["Tile", "LabelledTile", "PredictionTile"]
+
 
 class Tile(BoundingBox):
     """
     Tiles are bbox that represent a location on a large image.
-    Functionnaly different than groundtruth
+    Functionally different than groundtruth
     """
 
     def __init__(

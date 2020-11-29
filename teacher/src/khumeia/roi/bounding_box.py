@@ -1,6 +1,8 @@
 import hashlib
 import json
 
+__all__ = ["BoundingBox"]
+
 
 class BoundingBox:
     """

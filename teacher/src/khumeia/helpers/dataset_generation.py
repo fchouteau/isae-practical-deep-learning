@@ -11,7 +11,7 @@ import numpy as np
 from khumeia import LOGGER
 from khumeia.data.dataset import Dataset
 from khumeia.data.item import SatelliteImage
-from khumeia.roi.sliding_window import SlidingWindow
+from khumeia.roi.tiles_generator import SlidingWindow
 from khumeia.roi.tiles_dumper import ImageItemTileDumper, NpArrayTileDumper
 from khumeia.roi.tiles_sampler import TilesSampler
 from khumeia.utils import roi_list_utils

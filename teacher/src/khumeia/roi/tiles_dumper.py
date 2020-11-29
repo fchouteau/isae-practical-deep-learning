@@ -4,7 +4,7 @@ from khumeia.data.item import SatelliteImage
 from khumeia.roi.tile import LabelledTile, Tile
 from khumeia.utils import io_utils
 
-__all__ = ["ImageItemTileDumper", "NpArrayTileDumper"]
+__all__ = ["ItemTileDumper", "ImageItemTileDumper", "NpArrayTileDumper"]
 
 
 class ItemTileDumper:
@@ -13,9 +13,9 @@ class ItemTileDumper:
         self.image = item.image
 
     def __call__(self, tile: Tile):
-        return self.dump_tiles_for_item(tile)
+        return self.dump_tile(tile)
 
-    def dump_tiles_for_item(self, tile: Tile):
+    def dump_tile(self, tile: Tile):
         raise NotImplementedError
 
 
@@ -25,7 +25,7 @@ class ImageItemTileDumper(ItemTileDumper):
         self.output_dir = Path(output_dir)
         self.save_format = save_format
 
-    def dump_tiles_for_item(self, tile: LabelledTile):
+    def dump_tile(self, tile: LabelledTile):
         if tile.item_id == self.item.key:
             (self.output_dir / tile.label).mkdir(exist_ok=True)
 
@@ -39,7 +39,7 @@ class ImageItemTileDumper(ItemTileDumper):
 
 
 class NpArrayTileDumper(ItemTileDumper):
-    def dump_tiles_for_item(self, tile: LabelledTile):
+    def dump_tile(self, tile: LabelledTile):
         if tile.item_id == self.item.key:
             tile_data = tile.get_data(self.image)
             tile_label = 0 if tile.label == "background" else 1

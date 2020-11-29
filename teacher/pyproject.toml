@@ -1,7 +1,3 @@
-[build-system]
-requires = ["setuptools>=40.8.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [tool.black]
 target-version = ['py36', 'py37', 'py38']
 skip-string-normalization = false
@@ -29,10 +25,3 @@ exclude = '''
 [tool.isort]
 profile = "black"
 line_length = 120
-
-[tool.pytest]
-testpaths = "tests"
-addopts = "--cov=khumeia --cov-report term-missing --verbose"
-
-[tool.flake8]
-max-line-length = 120

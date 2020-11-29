@@ -93,7 +93,7 @@ def get_state(tiles_list):
     global_stats = defaultdict(int)
 
     s = ""
-    s += "--- Tiles Dataset ---\n"
+    s += "\n--- Tiles Dataset ---\n"
     s += "Found labels {}\n".format(found_labels)
     s += "-- Per item stats --\n"
     if item_keys is not None:
@@ -105,6 +105,7 @@ def get_state(tiles_list):
                 s += "Item {}: Label {}: {} rois\n".format(item_key, label, nb_tiles)
                 global_stats[label] += nb_tiles
     s += "-- Global stats --\n"
+    s += "All : {}\n".format(sum(global_stats[label] for label in global_stats))
     for label in global_stats:
         s += "Label {}: {} rois\n".format(label, global_stats[label])
 

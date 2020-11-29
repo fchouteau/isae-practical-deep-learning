@@ -8,6 +8,8 @@ from khumeia.roi.bounding_box import BoundingBox
 from khumeia.roi.groundtruth import Groundtruth
 from khumeia.roi.tile import LabelledTile, Tile
 
+__all__ = ["TilesGenerator", "RandomTiles", "CenteredTiles", "SlidingWindow"]
+
 
 class TilesGenerator:
     """
@@ -221,7 +223,7 @@ class SlidingWindow(TilesGenerator):
         return list(tiles_with_labels)
 
 
-class CenteredTilesGenerator(TilesGenerator):
+class CenteredTiles(TilesGenerator):
     """
     Generate tiles centered on groundtruth objects
     """
@@ -232,7 +234,7 @@ class CenteredTilesGenerator(TilesGenerator):
         padding: int = 0,
         data_transform_fn: Optional[Callable] = None,
     ):
-        super(CenteredTilesGenerator, self).__init__(
+        super(CenteredTiles, self).__init__(
             tile_size=tile_size,
             padding=padding,
             data_transform_fn=data_transform_fn,
