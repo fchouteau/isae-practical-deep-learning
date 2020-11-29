@@ -1,15 +1,21 @@
-build-docs-pdf:
-	cd docs && reveal-md slides.md --print slides.pdf --css static/style.css
+serve-slides:
+	cd docs; reveal-md . \
+				-w \
+				--disable-auto-open \
+				--template static/template/reveal.html \
+#				--css static/css/evo.css \
+#				--css static/css/reset.css \
+				--static-dirs static
 
-build-docs-serve:
-	cd docs && watch -n 10 'reveal-md slides.md -w --css static/style.css --disable-auto-open'
+build-slides:
+	cd docs; reveal-md . \
+				--template static/template/reveal.html \
+#				--css static/css/evo.css \
+#				--css static/css/reset.css \
+				--static-dirs static
 
-build-docs-site:
-	rm -rf ../docs
-	cd docs && reveal-md slides.md --css static/style.css --static=../../docs --static-dirs=static --absolute-url https://fchouteau.github.io/isae-practical-deep-learning
-	cp static/style.css ../../docs/css/style.css
-	sed -i 's|<link rel="stylesheet" href="./_assets/static/style.css" />|<link rel="stylesheet" href="./css/style.css" />|g' ../../docs/slides.html
-	cd ..
+build-pdf:
+	docker run --rm -t --net=host -v /home/fchouteau/classes/isae-practical-deep-learning/teacher/docs:/slides astefanutti/decktape http://192.168.86.105:1948/slides.md#/ slides.pdf
 
 build-student-notebooks:
 	jupytext --to notebook 1_hands_on.py --output ../1_hands_on.py.ipynb
