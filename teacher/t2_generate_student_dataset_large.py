@@ -111,8 +111,8 @@ from khumeia.roi.tiles_sampler import *
 
 # %%
 SAMPLING_RATIO = 9
-NB_POSITIVE_TRAIN_TILES = 5120
-NB_POSITIVE_TEST_TILES = 512
+NB_POSITIVE_TRAIN_TILES = 4608
+NB_POSITIVE_TEST_TILES = 1024
 
 # %%
 train_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
@@ -176,7 +176,7 @@ test_labels = test_labels[test_indexes]
 
 # %%
 # Save as dict of nparrays
-dataset_path = Path("./data") / "trainval_aircraft_dataset.npz"
+dataset_path = Path("./data") / "large_aircraft_dataset.npz"
 
 with open(dataset_path, "wb") as f:
     np.savez_compressed(
@@ -202,7 +202,7 @@ subprocess.check_call(cmd, shell=True)
 # try to reload using numpy datasource
 ds = np.DataSource("/tmp/")
 f = ds.open(
-    "https://storage.googleapis.com/fchouteau-isae-deep-learning/trainval_aircraft_dataset.npz",
+    "https://storage.googleapis.com/fchouteau-isae-deep-learning/large_aircraft_dataset.npz",
     "rb",
 )
 large_dataset = np.load(f)

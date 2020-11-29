@@ -40,7 +40,7 @@ import numpy as np
 
 # %%
 # Global variables
-TRAINVAL_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/trainval_aircraft_dataset.npz"
+TRAINVAL_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/large_aircraft_dataset.npz"
 
 # %% [markdown]
 # ## Q0 Downloading & splitting the dataset
@@ -62,8 +62,12 @@ trainval_labels = trainval_dataset["train_labels"]
 test_images = trainval_dataset["test_images"]
 test_labels = trainval_dataset["test_labels"]
 
+# %%
 print(trainval_images.shape)
 print(np.unique(trainval_labels, return_counts=True))
+
+print(test_images.shape)
+print(np.unique(test_labels, return_counts=True))
 
 # %% [markdown]
 # ### a. Data Exploration

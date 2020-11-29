@@ -154,9 +154,18 @@ print("Labels counts :")
 for l, c, label in zip(*np.unique(trainval_labels, return_counts=True), LABEL_NAMES):
     print(f" Label: {label} , value: {l}, count: {c}")
 
-# %%
 for l, label in enumerate(LABEL_NAMES):
     print(f"Examples shape for label {l} : {trainval_images[trainval_labels == l, ::].shape}")
+
+# %%
+LABEL_NAMES = ["Not an aircraft", "Aircraft"]
+
+print("Labels counts :")
+for l, c, label in zip(*np.unique(test_labels, return_counts=True), LABEL_NAMES):
+    print(f" Label: {label} , value: {l}, count: {c}")
+
+for l, label in enumerate(LABEL_NAMES):
+    print(f"Examples shape for label {l} : {test_images[test_labels == l, ::].shape}")
 
 # %%
 grid_size = 4
@@ -346,8 +355,10 @@ def model_fn():
         nn.Flatten(),
         nn.Linear(6 * 6 * 64, 256),
         nn.ReLU(),
+        nn.Dropout(p=0.25),
         nn.Linear(256, 64),
         nn.ReLU(),
+        nn.Dropout(p=0.25),
         nn.Linear(64, 2),
         nn.LogSoftmax(dim=-1),
     )
