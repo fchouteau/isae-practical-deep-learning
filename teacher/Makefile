@@ -11,6 +11,7 @@ build-slides:
 				--static ../../docs \
 				--template static/template/reveal.html \
 				--static-dirs static
+	rm ../docs/index.html && mv ../docs/slides.html ../docs/index.html
 
 build-pdf:
 	docker run --rm -t --net=host -v /home/fchouteau/classes/isae-practical-deep-learning/teacher/docs:/slides astefanutti/decktape http://192.168.86.105:1948/slides.md#/ slides.pdf
