@@ -338,35 +338,32 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # If you need to write your own module, plenty of resources are available one the web or in deep learning course
 
 
-def model_fn():
+def model_fn(num_classes: int = 2):
     model = nn.Sequential(
-        nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, bias=False),
-        nn.BatchNorm2d(32),
+        nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3),
         nn.ReLU(),
         nn.MaxPool2d(2),
-        nn.Conv2d(32, 64, 3, bias=False),
-        nn.BatchNorm2d(64),
+        nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3),
         nn.ReLU(),
         nn.MaxPool2d(2),
-        nn.Conv2d(64, 64, 3, bias=False),
-        nn.BatchNorm2d(64),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3),
         nn.ReLU(),
         nn.MaxPool2d(2),
         nn.Flatten(),
-        nn.Linear(6 * 6 * 64, 256),
+        nn.Linear(in_features=6 * 6 * 64, out_features=256),
         nn.ReLU(),
         nn.Dropout(p=0.25),
-        nn.Linear(256, 64),
+        nn.Linear(in_features=256, out_features=64),
         nn.ReLU(),
         nn.Dropout(p=0.25),
-        nn.Linear(64, 2),
+        nn.Linear(in_features=64, out_features=num_classes),
         nn.LogSoftmax(dim=-1),
     )
 
     return model
 
 
-model = model_fn()
+model = model_fn(num_classes=2)
 
 # moving model to gpu if available
 model.to(DEVICE)

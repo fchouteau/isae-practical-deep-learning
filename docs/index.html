@@ -65,12 +65,14 @@ This is awesome ! 😲 <!-- .element: style="color: white; font-family: cursive;
 ### Who ?
 
 - ![ads](static/img/AIRBUS_Blue.png) <!-- .element: height="44px" width="220px" -->
-- Computer Vision R&D at Airbus Defence and Space
-- Ground segment software for earth observation satellites
-- Working daily with Deep Learning on satellite imagery
+- Computer Vision R&D at **Airbus Defence and Space**
+- Ground segment software for Earth Observation satellites
+- Daily job revolving around Machine Learning + Satellite Imagery
     - Information extraction
     - Image processing
     - Research stuff
+
+(contact me on slack)
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -172,10 +174,10 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 ### Let's go ! 
 
 1. Go to google colab
-2. Import the first notebook & follow it
-3. At the end, you will be less guided
+2. Import the first notebook & follow the guidelines
+3. ...
 4. Profit !
-5. If you're done... go to Session 2 !
+5. If you're done... go to the next notebook !
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -213,24 +215,25 @@ https://app.sli.do/event/s79n7gax/live/questions
 - 10240 64x64 test images
 - **1/10 aircraft-background ratio**
 
-![](static/img/large_dataset.png) <!-- .element height="35%" width="35%" -->
+![tiles](static/img/large_dataset.png) <!-- .element height="35%" width="35%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
-### Test Dataset description
+### Final Dataset description
 
+- Objective: Apply your classifier on "real" images and find aircrafts
 - 36 512x512 images with some aircrafts
 
-![](static/img/large_tiles.png) <!-- .element height="35%" width="35%" -->
+![tiles](static/img/large_tiles.png) <!-- .element height="35%" width="35%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
-### Sliding window ?
+### One idea: Sliding window
 
 - Training Image Size: 64x64, output = binary classification
 - Target Image Size: 512x512, target = detect & count aircrafts ?
 
-![](static/img/sliding_window.gif)
+![sliding](static/img/sliding_window.gif)
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -248,7 +251,7 @@ https://app.sli.do/event/s79n7gax/live/questions
 1. Start/Restart your machine
 2. Follow notebooks 2 and 3
 
-![](https://i.stack.imgur.com/U9Iki.png)
+![xkcd](https://i.stack.imgur.com/U9Iki.png)
 
 </script></section></section><section ><section data-markdown><script type="text/template">
 
@@ -258,7 +261,7 @@ https://app.sli.do/event/s79n7gax/live/questions
 
 ### The Confusion Matrix
 
-![](static/img/confusion_matrix.png)
+![cm](static/img/confusion_matrix.png)
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -273,13 +276,13 @@ https://app.sli.do/event/s79n7gax/live/questions
 
 ### The ROC Curve
 
-![](static/img/roc-curve-v2.png)
+![roc](static/img/roc-curve-v2.png)
 
 </script></section><section data-markdown><script type="text/template">
 
 ### The ROC curve (visualized)
 
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/ROC.gif)
+![roc](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/ROC.gif)
 
 The shape of an ROC curve changes when a model changes the way it classifies the two outcomes.
 
@@ -287,13 +290,13 @@ The shape of an ROC curve changes when a model changes the way it classifies the
 
 ### The PR Curve
 
-![](static/img/pr_curve.png) <!-- .element height="35%" width="35%" -->
+![pr](static/img/pr_curve.png) <!-- .element height="35%" width="35%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
 ### The PR Curve (visualized)
 
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/PR.gif)
+![pr](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/PR.gif)
 
  The shape of the precision-recall curve also changes when a model changes the way it classifies the two outcomes.
  
@@ -301,7 +304,7 @@ The shape of an ROC curve changes when a model changes the way it classifies the
 
 ### Using any curve to select your trade-off
 
-![](static/img/ROC_space-2.png)  <!-- .element height="40%" width="40%" -->
+![calib](static/img/ROC_space-2.png)  <!-- .element height="40%" width="40%" -->
 
 (this is a roc curve)
 
@@ -309,7 +312,7 @@ The shape of an ROC curve changes when a model changes the way it classifies the
 
 ### Using any curve to select your trade-off
 
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/cutoff.gif)  <!-- .element height="40%" width="40%" -->
+![prroc](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/cutoff.gif)  <!-- .element height="40%" width="40%" -->
 
 (this is a roc curve)
 
@@ -321,7 +324,7 @@ The shape of an ROC curve changes when a model changes the way it classifies the
 - Both curve can be used to select your trade-off
 - Precision-recall curve is more sensitive to class imbalanace than an ROC curve
 
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/imbalance.gif)  <!-- .element height="50%" width="50%" -->
+![prroc](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/imbalance.gif)  <!-- .element height="50%" width="50%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -337,23 +340,15 @@ Readings:
 
 Welcome to the life of a deep learning engineer !
 
-![](static/img/model_train_img.png)
+![train](static/img/model_train_img.png)
 
 </script></section><section data-markdown><script type="text/template">
 
-![](static/img/tesla.jpg)
+![data](static/img/tesla.jpg)
 
 </script></section><section data-markdown><script type="text/template">
 
-Contact (add at airbus dot com):
-
-florient.f.chouteau
-matthieu.le-goff
-marina.gruet
-
-</script></section><section data-markdown><script type="text/template">
-
-![](https://media.giphy.com/media/lD76yTC5zxZPG/giphy.gif)
+![goodbye](https://media.giphy.com/media/lD76yTC5zxZPG/giphy.gif)
 
 </script></section></section></div>
     </div>

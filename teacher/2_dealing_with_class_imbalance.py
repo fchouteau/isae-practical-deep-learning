@@ -113,7 +113,233 @@ foreground_indexes = np.where(trainval_labels == 1)
 # d. What did you expect ? Is your model working well ?
 
 # %%
-# Q1
+from typing import Callable
+
+import torch
+import torch.nn.functional as F
+from PIL import Image
+from torch import nn, optim
+from torch.utils.data import DataLoader, Dataset
+from torchvision import datasets, transforms
+
+# %%
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+# %%
+# Helper functions to get you started
+class NpArrayDataset(Dataset):
+    def __init__(
+        self,
+        images: np.ndarray,
+        labels: np.ndarray,
+        image_transforms: Callable = None,
+        label_transforms: Callable = None,
+    ):
+        self.images = images
+        self.labels = labels
+        self.image_transforms = image_transforms
+        self.label_transforms = label_transforms
+
+    def __len__(self):
+        return self.images.shape[0]
+
+    def __getitem__(self, index: int):
+        x = self.images[index]
+        y = self.labels[index]
+
+        if self.image_transforms is not None:
+            x = self.image_transforms(x)
+        else:
+            x = torch.tensor(x)
+
+        if self.label_transforms is not None:
+            y = self.label_transforms(y)
+        else:
+            y = torch.tensor(y)
+
+        return x, y
+
+# %%
+# Data loading
+image_transforms = transforms.Compose(
+    [
+        # Add data augmetation ?
+        transforms.ToTensor(),
+    ]
+)
+
+target_transforms = None
+
+# load the training data
+train_set = NpArrayDataset(
+    images=..., labels=..., image_transforms=image_transforms, label_transforms=target_transforms
+)
+train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
+
+# load the validation data
+validation_set = NpArrayDataset(
+    images=..., labels=..., image_transforms=image_transforms, label_transforms=target_transforms
+)
+val_loader = DataLoader(validation_set, batch_size=64, shuffle=True)
+
+
+# %% [markdown]
+# define your model, fill the blanks
+#
+# Be careful, this time we are zero padding images so convolutions do not reduce image size !
+#
+# ![padding](https://raw.githubusercontent.com/vdumoulin/conv_arithmetic/master/gif/same_padding_no_strides.gif)
+
+# %%
+def model_fn(num_classes: int = 2):
+
+    model = nn.Sequential(
+        # size: 3 x 64 x 64
+        nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
+        # size: 32 x 64 x 64
+        nn.ReLU(),
+        nn.Conv2d(in_channels=..., out_channels=32, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        # size: 32 x 32 x 32
+        nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
+        nn.ReLU(),
+        # size: 64 x 32 x 32
+        nn.MaxPool2d(2),
+        # size: 32 x ? x ?
+        nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        # size: ? x ? x ?
+        nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
+        nn.ReLU(),
+        nn.MaxPool2d(2),
+        # size: ? x ? x ?
+        nn.Flatten(),
+        nn.Linear(in_features=..., out_features=256),
+        nn.ReLU(),
+        nn.Dropout(p=0.25),
+        nn.Linear(in_features=256, out_features=64),
+        nn.ReLU(),
+        nn.Dropout(p=0.25),
+        nn.Linear(in_features=64, out_features=num_classes),
+        nn.LogSoftmax(dim=-1),
+    )
+
+    return model
+
+model = model_fn(num_classes=2)
+
+model.to(DEVICE)
+
+
+# %%
+print(model)
+
+# %%
+# declare optimizers and loss
+optimizer = ...
+criterion = ...
+
+# %%
+# ignite imports
+import ignite.engine
+import ignite.handlers
+import ignite.metrics
+import ignite.utils
+from ignite.engine import Events
+
+# %%
+# ignite engine configuration (modify as you wish)
+
+dataset_name = "aircrafts"
+
+trainer = ignite.engine.create_supervised_trainer(model=model, optimizer=optimizer, loss_fn=criterion, device=DEVICE)
+
+# create metrics
+metrics = {
+    "accuracy": ignite.metrics.Accuracy(),
+    "nll": ignite.metrics.Loss(criterion),
+    "cm": ignite.metrics.ConfusionMatrix(num_classes=2),
+}
+
+ignite.metrics.RunningAverage(output_transform=lambda x: x).attach(trainer, "loss")
+
+# Evaluators
+train_evaluator = ignite.engine.create_supervised_evaluator(model, metrics=metrics, device=DEVICE)
+val_evaluator = ignite.engine.create_supervised_evaluator(model, metrics=metrics, device=DEVICE)
+
+# Logging
+train_evaluator.logger = ignite.utils.setup_logger("train")
+val_evaluator.logger = ignite.utils.setup_logger("val")
+
+# Add checkpointer
+# You can modify this to add checkpointing of best models
+checkpointer = ignite.handlers.ModelCheckpoint(
+    "./saved_models",
+    filename_prefix=dataset_name,
+    n_saved=2,
+    create_dir=True,
+    save_as_state_dict=True,
+    require_empty=False,
+)
+trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {model_name: model})
+
+# Add early stopping
+def score_function(engine):
+    val_loss = engine.state.metrics["nll"]
+    return -val_loss
+
+
+handler = EarlyStopping(patience=10, score_function=score_function, trainer=trainer)
+
+val_evaluator.add_event_handler(Events.COMPLETED, handler)
+
+# init variables for logging
+training_history = {"accuracy": [], "loss": []}
+validation_history = {"accuracy": [], "loss": []}
+last_epoch = []
+
+
+@trainer.on(Events.EPOCH_COMPLETED)
+def log_training_results(trainer):
+    train_evaluator.run(train_loader)
+    metrics = train_evaluator.state.metrics
+    accuracy = metrics["accuracy"] * 100
+    loss = metrics["nll"]
+    last_epoch.append(0)
+    training_history["accuracy"].append(accuracy)
+    training_history["loss"].append(loss)
+    print(
+        "Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(
+            trainer.state.epoch, accuracy, loss
+        )
+    )
+
+
+@trainer.on(Events.EPOCH_COMPLETED)
+def log_validation_results(trainer):
+    val_evaluator.run(val_loader)
+    metrics = val_evaluator.state.metrics
+    accuracy = metrics["accuracy"] * 100
+    loss = metrics["nll"]
+    validation_history["accuracy"].append(accuracy)
+    validation_history["loss"].append(loss)
+    print(
+        "Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(
+            trainer.state.epoch, accuracy, loss
+        )
+    )
+
+# %%
+# Run your training and plot your train/val metrics
 
 # %% [markdown]
 # ### Test metrics, introduction to PR Curves
@@ -177,22 +403,15 @@ foreground_indexes = np.where(trainval_labels == 1)
 # Q2.a here
 
 # %% [markdown]
-# ### b. Optimizer and model modifications
+# ### b. Optimizer and other hyperparameters modifications
 #
 # i ) Now that you have worked on your dataset and decided to undersample it, it's time to tune your network and your training configuration
 #
-# In Session 1, you tested two descent gradient. What is the effect of its modification? Apply it to your training and compare metrics.
+# In Session 1, you tested two different optimizers. What is the effect of its modification? Apply it to your training and compare metrics.
 #
 # ii ) An other important parameter is the learning rate, you can [check its effect on the behavior of your training](https://developers.google.com/machine-learning/crash-course/fitter/graph).
-#
-# iii) There is no absolute law concerning the structure of your deep Learning model. During the [Deep Learning class](%matplotlib inline) you had an overview of existing models
-#
-# You can operate a modification on your structure and observe the effect on final metrics. Of course, remain consistent with credible models, cf Layer Patterns chapter on this "must view" course : http://cs231n.github.io/convolutional-networks/
-#
-# <img src="docs/static/img/comparison_architectures.png" alt="pokemon" style="width: 400px;"/>
 
 # %%
-# Q2.b here
 
 # %% [markdown]
 # ### c. Going Further
@@ -209,6 +428,30 @@ foreground_indexes = np.where(trainval_labels == 1)
 
 # %%
 # Q2.c here
+
+# %% [markdown]
+# ### d. [Optional] Model architecture modification
+#
+# There are no absolute law concerning the structure of your deep Learning model. During the [Deep Learning class](%matplotlib inline) you had an overview of existing models
+#
+# You can operate a modification on your structure and observe the effect on final metrics. Of course, remain consistent with credible models, cf Layer Patterns chapter on this "must view" course : http://cs231n.github.io/convolutional-networks/
+#
+# <img src="docs/static/img/comparison_architectures.png" alt="pokemon" style="width: 400px;"/>
+#
+#
+# You can also use off the shelf architecture provided by torchvision, for example:
+#
+# ```python
+# import torchvision.models
+#
+# resnet18 = torchvision.models.resnet18(num_classes=2)
+# ```
+#
+# You can also use [transfer learning](https://machinelearningmastery.com/transfer-learning-for-deep-learning/) to "finetune" already trained features on your dataset
+#
+# [Please refer to this example on transfer learning](https://nbviewer.jupyter.org/github/pytorch/ignite/blob/master/examples/notebooks/EfficientNet_Cifar100_finetuning.ipynb)
+
+# %%
 
 # %% [markdown]
 # ## Q3. Full Test whole dataset & more improvements
