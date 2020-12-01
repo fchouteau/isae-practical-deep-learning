@@ -58,12 +58,14 @@ This is awesome ! 😲 <!-- .element: style="color: white; font-family: cursive;
 ### Who ?
 
 - ![ads](static/img/AIRBUS_Blue.png) <!-- .element: height="44px" width="220px" -->
-- Computer Vision R&D at Airbus Defence and Space
-- Ground segment software for earth observation satellites
-- Working daily with Deep Learning on satellite imagery
+- Computer Vision R&D at **Airbus Defence and Space**
+- Ground segment software for Earth Observation satellites
+- Daily job revolving around Machine Learning + Satellite Imagery
     - Information extraction
     - Image processing
     - Research stuff
+
+(contact me on slack)
 
 <!--v-->
 
@@ -150,7 +152,6 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 ![](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
 
-
 <!--v-->
 
 ### Dataset description
@@ -165,29 +166,173 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 ### Let's go ! 
 
 1. Go to google colab
-2. Import the first notebook & follow it
-3. At the end, you will be less guided
+2. Import the first notebook & follow the guidelines
+3. ...
 4. Profit !
-5. If you're done... go to Session 2 !
+5. If you're done... go to the next notebook !
 
 <!--v-->
 
 ### Colab Guide
 
 <video data-autoplay  controls width="720">
-    <source src="https://storage.googleapis.com/fchouteau-isae-deep-learning/static/colab_guide.mp4" type="video/mp4">
+    <source src="https://storage.googleapis.com/fchouteau-isae-deep-learning/static/colab_guide_proper.mp4" type="video/mp4">
 </video>
+
+<!--s-->
+
+## Session 1
+## Take-Away messages
+
+<!--v-->
+
+### Convolutional Neural Networks
+
+![feature](https://www.mdpi.com/sensors/sensors-19-04933/article_deploy/html/images/sensors-19-04933-g001.png)  <!-- .element height="60%" width="60%" -->
+
+<!--v-->
+
+### Convolutions ?
+
+![cnns](https://i.stack.imgur.com/FjvuN.gif)  <!-- .element height="40%" width="40%" -->
+
+[useful link](https://github.com/vdumoulin/conv_arithmetic)
+
+<!--v-->
+
+### Pooling ?
+
+![](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/img/2b2d4263bb8470b.gif) <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### nn.Linear ?
+
+![](static/img/nnlinear.png) <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### CNNs in practice...
+
+```python
+
+import torchvision.models
+
+model = torchvision.models.resnet18(num_classes=2)
+```
+
+```test
+ResNet(
+  (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+  (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (relu): ReLU(inplace=True)
+  (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+  (layer1): Sequential(
+    (0): BasicBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    )
+    (1): BasicBlock(
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): BasicBlock(
+      (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(2, 2), bias=False)
+        (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): BasicBlock(
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    )
+  )
+  (layer3): Sequential(
+    (0): BasicBlock(
+      (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(2, 2), bias=False)
+        (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): BasicBlock(
+      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    )
+  )
+  (layer4): Sequential(
+    (0): BasicBlock(
+      (conv1): Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (downsample): Sequential(
+        (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+        (1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+    (1): BasicBlock(
+      (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (relu): ReLU(inplace=True)
+      (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    )
+  )
+  (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))
+  (fc): Linear(in_features=512, out_features=2, bias=True)
+)
+```
+
+<!--v-->
+
+### high-level frameworks over pytorch
+
+- pytorch: define your models, autodifferenciation, **but you write the rest**
+- hl library: training loops, callbacks, distribution etc...
+
+![ignite](https://raw.githubusercontent.com/pytorch/ignite/master/assets/ignite_vs_bare_pytorch.png)  <!-- .element height="50%" width="50%" -->
+
+<!--v-->
+
+### high-level frameworks over pytorch
+
+![lightning](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### ROC-Curves
+
+(see section "extra" on these slides)
 
 <!--s-->
 
 ## Session 2
 ## Class Imbalance & Sliding Windows
-
-<!--v-->
-
-![icebreaker](https://media.giphy.com/media/tyttpH01yNOp8PezC6c/giphy.gif)
-
-https://app.sli.do/event/s79n7gax/live/questions
 
 <!--v-->
 
@@ -206,24 +351,25 @@ https://app.sli.do/event/s79n7gax/live/questions
 - 10240 64x64 test images
 - **1/10 aircraft-background ratio**
 
-![](static/img/large_dataset.png) <!-- .element height="35%" width="35%" -->
+![tiles](static/img/large_dataset.png) <!-- .element height="35%" width="35%" -->
 
 <!--v-->
 
-### Test Dataset description
+### Final Dataset description
 
+- Objective: Apply your classifier on "real" images and find aircrafts
 - 36 512x512 images with some aircrafts
 
-![](static/img/large_tiles.png) <!-- .element height="35%" width="35%" -->
+![tiles](static/img/large_tiles.png) <!-- .element height="35%" width="35%" -->
 
 <!--v-->
 
-### Sliding window ?
+### One idea: Sliding window
 
 - Training Image Size: 64x64, output = binary classification
 - Target Image Size: 512x512, target = detect & count aircrafts ?
 
-![](static/img/sliding_window.gif)
+![sliding](static/img/sliding_window.gif)
 
 <!--v-->
 
@@ -241,110 +387,120 @@ https://app.sli.do/event/s79n7gax/live/questions
 1. Start/Restart your machine
 2. Follow notebooks 2 and 3
 
-![](https://i.stack.imgur.com/U9Iki.png)
+![xkcd](https://i.stack.imgur.com/U9Iki.png)
 
 <!--s-->
 
+## Session 2: Take-home messages
+
+<!--v-->
+
+### Objectives
+
+- Continue manipulating CNNs using pytorch / ignite
+- Tackle a more realistic dataset
+- Examine what must changes to diagnose your model and improve it
+
+<!--v-->
+
+Welcome to the life of a deep learning engineer !
+
+![train](static/img/model_train_img.png)
+
+<!--v-->
+
+![data](static/img/tesla.jpg) <!-- .element height="70%" width="70%" -->
+
+<!--v-->
+
+![goodbye](https://media.giphy.com/media/lD76yTC5zxZPG/giphy.gif)
+
+<!--s-->
+
+## Extra
 ## Diagnosing Classifier performance
 
 <!--v-->
 
-### The Confusion Matrix
+### Binary classification metrics
 
-![](static/img/confusion_matrix.png)
-
-<!--v-->
-
-### F-Beta ?
-
-![fbeta](https://i.stack.imgur.com/swW0x.png) <!-- .element height="35%" width="35%" -->
-
-- beta > 1 => Emphasizes recall
-- beta < 1 => Emphasizes precision
+![cm](static/img/confusion_matrix.png)
 
 <!--v-->
 
 ### The ROC Curve
 
-![](static/img/roc-curve-v2.png)
+![roc](static/img/roc-curve-v2.png)
 
 <!--v-->
 
 ### The ROC curve (visualized)
 
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/ROC.gif)
+![roc](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/ROC.gif)
 
 The shape of an ROC curve changes when a model changes the way it classifies the two outcomes.
 
 <!--v-->
 
+### How to compute a ROC curve ?
+
+![proc](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/cutoff.gif)  <!-- .element height="40%" width="40%" -->
+
+- y_pred = a list of probas, y_true = a list of 0 or 1
+- vertical line : threshold value
+- red dot : FPR and TPR for the threshold
+- the curve is plotted for all available thresholds
+
+<!--v-->
+
+### Precision & Recall
+
+Usually the most important things in imbalanced classification
+
+![pr](static/img/precision_recall.png)  <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### PR synthetic metric
+
+![fbeta](https://i.stack.imgur.com/swW0x.png) <!-- .element height="35%" width="35%" -->
+
+- beta = 1 => Recall & Precision weighted equally
+- beta > 1 => Emphasizes recall (not missing positive examples)
+- beta < 1 => Emphasizes precision (not doing )
+
+<!--v-->
+
 ### The PR Curve
 
-![](static/img/pr_curve.png) <!-- .element height="35%" width="35%" -->
+![pr](static/img/pr_curve.png) <!-- .element height="75%" width="75%" -->
 
 <!--v-->
 
 ### The PR Curve (visualized)
 
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/PR.gif)
+![pr](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/PR.gif)
 
- The shape of the precision-recall curve also changes when a model changes the way it classifies the two outcomes.
- 
-<!--v-->
-
-### Using any curve to select your trade-off
-
-![](static/img/ROC_space-2.png)  <!-- .element height="40%" width="40%" -->
-
-(this is a roc curve)
-
-<!--v-->
-
-### Using any curve to select your trade-off
-
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/cutoff.gif)  <!-- .element height="40%" width="40%" -->
-
-(this is a roc curve)
+The shape of the precision-recall curve also changes when a model changes the way it classifies the two outcomes.
 
 <!--v-->
 
 ### Precision-Recall or ROC ?
 
-- Plotting Interpretability: Imbalanced Dataset vs ROC Curve ?
 - Both curve can be used to select your trade-off
-- Precision-recall curve is more sensitive to class imbalanace than an ROC curve
+- Precision-recall curve is more sensitive to class imbalance than an ROC curve
+- Example: Try computing your FPR on very imbalanced dataset
 
-![](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/imbalance.gif)  <!-- .element height="50%" width="50%" -->
+![prroc](https://raw.githubusercontent.com/dariyasydykova/open_projects/master/ROC_animation/animations/imbalance.gif)  <!-- .element height="50%" width="50%" -->
+
+<!--v-->
+
+### Curves Usage: Selecting trade-off
+
+![calib](static/img/pr_space.png)  <!-- .element height="70%" width="70%" -->
 
 <!--v-->
 
 Readings:
 - https://lukeoakdenrayner.wordpress.com/2018/01/07/the-philosophical-argument-for-using-roc-curves/
 - https://towardsdatascience.com/on-roc-and-precision-recall-curves-c23e9b63820c
-
-<!--s-->
-
-## Concluding remarks
-
-<!--v-->
-
-Welcome to the life of a deep learning engineer !
-
-![](static/img/model_train_img.png)
-
-<!--v-->
-
-![](static/img/tesla.jpg)
-
-<!--v-->
-
-Contact (add at airbus dot com):
-
-florient.f.chouteau
-matthieu.le-goff
-marina.gruet
-
-<!--v-->
-
-![](https://media.giphy.com/media/lD76yTC5zxZPG/giphy.gif)
-

@@ -16,6 +16,10 @@ However, this is runnable everywhere since data access is based on public URLs &
 
 Should you want to do this at home you can use [Google Collaboratory instances](https://colab.research.google.com/) - it's even easier than deep learning VMs
 
+## Reading list
+
+
+
 ## Usage & Contribution
 
 No support is guaranteed by the authors beyond the hands-on session.
