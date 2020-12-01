@@ -18,7 +18,20 @@ Should you want to do this at home you can use [Google Collaboratory instances](
 
 ## Reading list
 
+The Bible : Convolutional Neural Networks for Image Recognition by Stanford, slides & course notes are very useful
+http://cs231n.stanford.edu/syllabus.html
 
+Explainations on convolutions, how to compute number of parameters & tensor sizes in a CNN...
+https://cs231n.github.io/convolutional-networks/
+
+Guide on convolution arithmetics and a lot of visualisations to understand convolutions better
+
+https://github.com/vdumoulin/conv_arithmetic <- Quelques animations sur les convolutionsEt quelques 
+
+Mediums blog posts that try to explain things 
+https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53
+
+https://towardsdatascience.com/intuitively-understanding-convolutions-for-deep-learning-1f6f42faee1 (edited) 
 
 ## Usage & Contribution
 
