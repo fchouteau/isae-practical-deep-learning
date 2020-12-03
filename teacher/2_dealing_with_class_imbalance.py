@@ -160,6 +160,7 @@ class NpArrayDataset(Dataset):
 
         return x, y
 
+
 # %%
 # Data loading
 image_transforms = transforms.Compose(
@@ -197,54 +198,55 @@ def model_fn(num_classes: int = 2):
     model = nn.Sequential(
         # size: 3 x 64 x 64
         nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
-        nn.Batchnorm2d(32),
+        nn.BatchNorm2d(32),
         # size: 32 x 64 x 64
         nn.ReLU(),
         nn.Conv2d(in_channels=..., out_channels=32, kernel_size=3, padding=1),
-        nn.Batchnorm2d(32),
+        nn.BatchNorm2d(32),
         nn.ReLU(),
         nn.MaxPool2d(2),
         # size: 32 x 32 x 32
         nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
-        nn.Batchnorm2d(64),
+        nn.BatchNorm2d(64),
         nn.ReLU(),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-        nn.Batchnorm2d(64),
+        nn.BatchNorm2d(64),
         nn.ReLU(),
         # size: 64 x 32 x 32
         nn.MaxPool2d(2),
-        # size: 32 x ? x ?
+        # size: 64 x ? x ?
         nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
-        nn.Batchnorm2d(128),
+        nn.BatchNorm2d(128),
         nn.ReLU(),
         nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
-        nn.Batchnorm2d(128),
+        nn.BatchNorm2d(128),
         nn.ReLU(),
         nn.MaxPool2d(2),
         # size: ? x ? x ?
         nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-        nn.Batchnorm2d(128),
+        nn.BatchNorm2d(128),
         nn.ReLU(),
         nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
-        nn.Batchnorm2d(128),
+        nn.BatchNorm2d(...),
         nn.ReLU(),
         nn.MaxPool2d(2),
         # size: ? x ? x ?
         nn.Flatten(),
         nn.Linear(in_features=..., out_features=256),
-        nn.Batchnorm1d(256),
+        nn.BatchNorm1d(...),
         nn.ReLU(),
-        nn.Dropout(p=0.25),
+        nn.Dropout(p=0.10),
         nn.Linear(in_features=256, out_features=64),
-        nn.Batchnorm1d(64),
+        nn.BatchNorm1d(...),
         nn.ReLU(),
-        nn.Dropout(p=0.25),
+        nn.Dropout(p=0.10),
         nn.Linear(in_features=64, out_features=num_classes),
         nn.LogSoftmax(dim=-1),
     )
 
     return model
 
+model_name = ...
 model = model_fn(num_classes=2)
 
 model.to(DEVICE)
@@ -308,7 +310,7 @@ def score_function(engine):
     return -val_loss
 
 
-handler = EarlyStopping(patience=10, score_function=score_function, trainer=trainer)
+handler = ignite.handlers.EarlyStopping(patience=10, score_function=score_function, trainer=trainer)
 
 val_evaluator.add_event_handler(Events.COMPLETED, handler)
 
@@ -347,6 +349,7 @@ def log_validation_results(trainer):
             trainer.state.epoch, accuracy, loss
         )
     )
+
 
 # %%
 # Run your training and plot your train/val metrics

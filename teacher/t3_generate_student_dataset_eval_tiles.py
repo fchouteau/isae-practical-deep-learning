@@ -204,7 +204,7 @@ for yt, xt in itertools.product(range(max_i), range(max_j)):
         gif.append(frame)
 
 # %%
-gif[0].save("out.gif", save_all=True, append_images=gif[1:], duration=100, loop=0)
+gif[0].save("docs/static/sliding_window.gif", save_all=True, append_images=gif[1:], duration=100, loop=0)
 
 # %% [markdown]
 # Sliding window demo 
