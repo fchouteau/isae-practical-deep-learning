@@ -15,15 +15,9 @@ revealOptions:
 
 # Deep Learning in Practice
 
-**ISAE-SUPAERO, SDD, Nov/Dev 2020**
+**ISAE-SUPAERO, SDD, Nov/Dev 2021**
 
 Florient CHOUTEAU
-
-<!--v-->
-
-![icebreaker](https://media.giphy.com/media/tyttpH01yNOp8PezC6c/giphy.gif)
-
-https://app.sli.do/event/s79n7gax/live/questions
 
 <!--v-->
 
@@ -58,6 +52,7 @@ This is awesome ! 😲 <!-- .element: style="color: white; font-family: cursive;
 ### Who ?
 
 - ![ads](static/img/AIRBUS_Blue.png) <!-- .element: height="44px" width="220px" -->
+- SDD 2016
 - Computer Vision R&D at **Airbus Defence and Space**
 - Ground segment software for Earth Observation satellites
 - Daily job revolving around Machine Learning + Satellite Imagery
@@ -69,6 +64,15 @@ This is awesome ! 😲 <!-- .element: style="color: white; font-family: cursive;
 
 <!--v-->
 
+### Who ?
+
+You'll see me a bit this year :
+- CNN for Computer Vision (this BE)
+- January Hackathon (CNN for Computer Vision)
+- Outils du Big Data : Cloud, Docker, Deployment
+
+<!--v-->
+
 ### Context: Earth Observation
 
 ![context](static/img/context.png)  <!-- .element:  width="60%" height="60%"-->
@@ -77,13 +81,24 @@ This is awesome ! 😲 <!-- .element: style="color: white; font-family: cursive;
 
 ### Context: Machine Learning on Satellite Imagery
 
-A lot of use cases (public):
+A lot of use cases :
 
 - Land Use / Land Cover cartography
 - Urban Cartography (building, roads, damage assessment...)
-- Various objects detections (ships, vehicles..)
+- Various objects detections (ships, vehicles...)
 
 ![shipdet](https://www.aerospace-valley.com/sites/default/files/styles/news_main/public/thumbnails/image/airbus_ship_detection_challenge.png?itok=i7DpZPus)
+
+<!--v-->
+
+### Context: Machine Learning on Satellite Imagery
+
+Can also be used for "image processing" : 
+
+- Denoising
+- "Super Resolution" ("enhance")
+
+![](https://maxar-blog-assets.s3.amazonaws.com/uploads/blogImages/HD_Cars.jpg) <!-- .element:  width="20%" height="20%"-->
 
 <!--v-->
 
@@ -97,9 +112,9 @@ A lot of use cases (public):
 
 - Trained a Convolutional Neural Network on Fashion MNIST
 - Wrote your first training loops with Pytorch
-- Discovered callbacks (early stopping), optimizers (sgd, adam), dropout
+- Discovered "callbacks" (early stopping), optimizers (sgd, adam), dropout
 - Saw your firsts neural architectures (alexnet, vggs, resnets)
-- Maybe discovered pytorch ignite
+- (Maybe discovered pytorch ignite)
 
 <!--v-->
 
@@ -122,9 +137,10 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 ### Objectives
 
 - Launch notebooks on Colab
-- Discover pytorch-ignite
+- Build an intuition over convolutions and CNNs
 - Train a basic CNN on a small training set
 - Plot the metrics & ROC curve on a small test set
+- Discover the world of hyperparameter tuning
 
 <!--v-->
 
@@ -132,25 +148,8 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 - Use GCP to get access to computing power & GPUs
 - Handle a dataset of images, do some basic data exploration
-- Discover *pytorch-ignite* a high-level deep-learning framework for pytorch
 - Train & evaluate your first CNN on a simple dataset
-
-<!--v-->
-
-### ![pytorch-ignite](https://raw.githubusercontent.com/pytorch/ignite/master/assets/logo/ignite_logo_mixed.svg) <!-- .element:  width="15%" height="15%"-->
-
-- [pytorch-ignite](https://github.com/skorch-dev/skorch) : a high-level deep learning library based on top of pytorch
-- Reduce boilerplate code (training loops, early stopping, logging...)
-- Extensible, based on experiment management
-
-<!--v-->
-
-### Pytorch Ecosystem 
-
-- There are other high-level frameworks based on pytorch: [Skorch](https://github.com/skorch-dev/skorch), [Lightning](https://github.com/williamFalcon/pytorch-lightning). All of them have their pros and cons
-- [There is a huge ecosystem based around pytorch](https://pytorch.org/ecosystem/)
-
-![](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
+- Go beyound accuracy to diagnose your model
 
 <!--v-->
 
@@ -160,6 +159,19 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 - 880 test images (440 aircrafts, 440 background), size 64x64
 
 ![](static/img/toy_dataset.png) <!-- .element height="40%" width="40%" -->
+
+<!--v--> 
+
+### Pytorch reminder
+
+![](https://pbs.twimg.com/media/E_1d06cVIAcYheX?format=jpg&name=large)  <!-- .element height="50%" width="50%" -->
+
+<!--v-->
+
+### Pytorch reminder
+
+![](https://pbs.twimg.com/media/E_1d06XVcA8Dhzs?format=jpg&name=large)  <!-- .element height="50%" width="50%" -->
+
 
 <!--v-->
 
@@ -178,6 +190,14 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 <video data-autoplay  controls width="720">
     <source src="https://storage.googleapis.com/fchouteau-isae-deep-learning/static/colab_guide_proper.mp4" type="video/mp4">
 </video>
+
+<!--v-->
+
+### GPU ???
+
+You'll see that... in February
+
+[Tutorial](https://colab.research.google.com/github/d2l-ai/d2l-en-colab/blob/master/chapter_deep-learning-computation/use-gpu.ipynb)
 
 <!--s-->
 
@@ -322,6 +342,25 @@ ResNet(
 ### high-level frameworks over pytorch
 
 ![lightning](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### ![pytorch-ignite](https://raw.githubusercontent.com/pytorch/ignite/master/assets/logo/ignite_logo_mixed.svg) <!-- .element:  width="15%" height="15%"-->
+
+- [pytorch-ignite](https://github.com/skorch-dev/skorch) : a high-level deep learning library based on top of pytorch
+- Reduce boilerplate code (training loops, early stopping, logging...)
+- Extensible, based on experiment management
+
+<!--v-->
+
+### Pytorch Ecosystem 
+
+- There are other high-level frameworks based on pytorch: [Skorch](https://github.com/skorch-dev/skorch), [Lightning](https://github.com/williamFalcon/pytorch-lightning). 
+- All of them have their pros and cons
+- [There is a huge ecosystem based around pytorch](https://pytorch.org/ecosystem/)
+
+![](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
+
 
 <!--v-->
 
