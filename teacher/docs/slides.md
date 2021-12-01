@@ -206,7 +206,33 @@ You'll see that... in February
 
 <!--v-->
 
-### Convolutional Neural Networks
+### Kernel filtering
+
+![](https://miro.medium.com/max/1400/1*Fw-ehcNBR9byHtho-Rxbtw.gif) <!-- .element height="30%" width="30%" -->
+
+
+<!--v-->
+
+### ConvNets intuition come from image processing
+
+![](https://imgs.developpaper.com/imgs/3480721674-5ae839c26eef6_articlex.jpg) <!-- .element height="30%" width="30%" -->
+
+
+<!--v-->
+
+### ConvNets intuition come from image processing
+
+![](https://ai.stanford.edu/~syyeung/cvweb/Pictures1/sharpening2.png) <!-- .element height="60%" width="60%" -->
+
+(I apologize for using Lena as an example)
+
+<!--v-->
+
+ConvNets works because we assume inputs are images
+
+<!--v-->
+
+### ConvNets
 
 ![feature](https://www.mdpi.com/sensors/sensors-19-04933/article_deploy/html/images/sensors-19-04933-g001.png)  <!-- .element height="60%" width="60%" -->
 
@@ -232,16 +258,17 @@ You'll see that... in February
 
 <!--v-->
 
+### Computing shape
+
+![tiles](static/img/cnnshape.png) <!-- .element height="35%" width="35%" -->
+
+<!--v-->
+
 ### CNNs in practice...
 
-```python
+![tiles](static/img/torchvision.png) <!-- .element height="35%" width="35%" -->
 
-import torchvision.models
-
-model = torchvision.models.resnet18(num_classes=2)
-```
-
-```test
+```text
 ResNet(
   (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
   (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
@@ -327,40 +354,6 @@ ResNet(
   (fc): Linear(in_features=512, out_features=2, bias=True)
 )
 ```
-
-<!--v-->
-
-### high-level frameworks over pytorch
-
-- pytorch: define your models, autodifferenciation, **but you write the rest**
-- hl library: training loops, callbacks, distribution etc...
-
-![ignite](https://raw.githubusercontent.com/pytorch/ignite/master/assets/ignite_vs_bare_pytorch.png)  <!-- .element height="50%" width="50%" -->
-
-<!--v-->
-
-### high-level frameworks over pytorch
-
-![lightning](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element height="40%" width="40%" -->
-
-<!--v-->
-
-### ![pytorch-ignite](https://raw.githubusercontent.com/pytorch/ignite/master/assets/logo/ignite_logo_mixed.svg) <!-- .element:  width="15%" height="15%"-->
-
-- [pytorch-ignite](https://github.com/skorch-dev/skorch) : a high-level deep learning library based on top of pytorch
-- Reduce boilerplate code (training loops, early stopping, logging...)
-- Extensible, based on experiment management
-
-<!--v-->
-
-### Pytorch Ecosystem 
-
-- There are other high-level frameworks based on pytorch: [Skorch](https://github.com/skorch-dev/skorch), [Lightning](https://github.com/williamFalcon/pytorch-lightning). 
-- All of them have their pros and cons
-- [There is a huge ecosystem based around pytorch](https://pytorch.org/ecosystem/)
-
-![](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
-
 
 <!--v-->
 
@@ -543,3 +536,41 @@ The shape of the precision-recall curve also changes when a model changes the wa
 Readings:
 - https://lukeoakdenrayner.wordpress.com/2018/01/07/the-philosophical-argument-for-using-roc-curves/
 - https://towardsdatascience.com/on-roc-and-precision-recall-curves-c23e9b63820c
+
+<!--s-->
+
+## Extra : Pytorch Ecosystem
+
+<!--v-->
+
+### high-level frameworks over pytorch
+
+- pytorch: define your models, autodifferenciation, **but you write the rest**
+- hl library: training loops, callbacks, distribution etc...
+
+![ignite](https://raw.githubusercontent.com/pytorch/ignite/master/assets/ignite_vs_bare_pytorch.png)  <!-- .element height="50%" width="50%" -->
+
+<!--v-->
+
+### high-level frameworks over pytorch
+
+![lightning](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element height="40%" width="40%" -->
+
+<!--v-->
+
+### ![pytorch-ignite](https://raw.githubusercontent.com/pytorch/ignite/master/assets/logo/ignite_logo_mixed.svg) <!-- .element:  width="15%" height="15%"-->
+
+- [pytorch-ignite](https://github.com/skorch-dev/skorch) : a high-level deep learning library based on top of pytorch
+- Reduce boilerplate code (training loops, early stopping, logging...)
+- Extensible, based on experiment management
+
+<!--v-->
+
+### Pytorch Ecosystem 
+
+- There are other high-level frameworks based on pytorch: [Skorch](https://github.com/skorch-dev/skorch), [Lightning](https://github.com/williamFalcon/pytorch-lightning). 
+- All of them have their pros and cons
+- [There is a huge ecosystem based around pytorch](https://pytorch.org/ecosystem/)
+
+![](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
+

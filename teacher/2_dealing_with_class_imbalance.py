@@ -94,6 +94,14 @@ print(np.unique(test_labels, return_counts=True))
 background_indexes = np.where(trainval_labels == 0)
 foreground_indexes = np.where(trainval_labels == 1)
 
+# %%
+# Compute the dataset statistics in [0.,1.], we're going to use it to normalize our data
+
+mean = np.mean(train_images, axis=(0, 1, 2)) / 255.0
+std = np.std(train_images, axis=(0, 1, 2)) / 255.0
+
+mean, std
+
 # %% [markdown]
 # ## Q1. Training & metrics
 #
@@ -165,8 +173,9 @@ class NpArrayDataset(Dataset):
 # Data loading
 image_transforms = transforms.Compose(
     [
-        # Add data augmetation ?
+        # Add data augmentation ?
         transforms.ToTensor(),
+        transforms.Normalize(mean, std),
     ]
 )
 
@@ -193,61 +202,60 @@ val_loader = DataLoader(validation_set, batch_size=64, shuffle=True)
 # ![padding](https://raw.githubusercontent.com/vdumoulin/conv_arithmetic/master/gif/same_padding_no_strides.gif)
 
 # %%
-def model_fn(num_classes: int = 2):
+def _init_weights(model):
+    for m in model.modules():
+        # Initialize all convs
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+        if isinstance(m, nn.Linear):
+            nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+
+
+def model_fn():
 
     model = nn.Sequential(
         # size: 3 x 64 x 64
         nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
-        nn.BatchNorm2d(32),
         # size: 32 x 64 x 64
         nn.ReLU(),
         nn.Conv2d(in_channels=..., out_channels=32, kernel_size=3, padding=1),
-        nn.BatchNorm2d(32),
         nn.ReLU(),
         nn.MaxPool2d(2),
         # size: 32 x 32 x 32
         nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
-        nn.BatchNorm2d(64),
         nn.ReLU(),
         nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-        nn.BatchNorm2d(64),
         nn.ReLU(),
         # size: 64 x 32 x 32
         nn.MaxPool2d(2),
         # size: 64 x ? x ?
         nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
-        nn.BatchNorm2d(128),
         nn.ReLU(),
         nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
-        nn.BatchNorm2d(128),
         nn.ReLU(),
         nn.MaxPool2d(2),
         # size: ? x ? x ?
         nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-        nn.BatchNorm2d(128),
         nn.ReLU(),
         nn.Conv2d(in_channels=..., out_channels=128, kernel_size=3, padding=1),
-        nn.BatchNorm2d(...),
         nn.ReLU(),
         nn.MaxPool2d(2),
         # size: ? x ? x ?
         nn.Flatten(),
         nn.Linear(in_features=..., out_features=256),
-        nn.BatchNorm1d(...),
         nn.ReLU(),
         nn.Dropout(p=0.10),
-        nn.Linear(in_features=256, out_features=64),
-        nn.BatchNorm1d(...),
-        nn.ReLU(),
-        nn.Dropout(p=0.10),
-        nn.Linear(in_features=64, out_features=num_classes),
-        nn.LogSoftmax(dim=-1),
+        nn.Linear(in_features=256, out_features=1),
+        nn.Sigmoid(),
     )
+    
+    _init_weights(model)
 
     return model
 
+
 model_name = ...
-model = model_fn(num_classes=2)
+model = model_fn()
 
 model.to(DEVICE)
 
@@ -261,97 +269,6 @@ optimizer = ...
 criterion = ...
 
 # %%
-# ignite imports
-import ignite.engine
-import ignite.handlers
-import ignite.metrics
-import ignite.utils
-from ignite.engine import Events
-
-# %%
-# ignite engine configuration (modify as you wish)
-
-dataset_name = "aircrafts"
-
-trainer = ignite.engine.create_supervised_trainer(model=model, optimizer=optimizer, loss_fn=criterion, device=DEVICE)
-
-# create metrics
-metrics = {
-    "accuracy": ignite.metrics.Accuracy(),
-    "nll": ignite.metrics.Loss(criterion),
-    "cm": ignite.metrics.ConfusionMatrix(num_classes=2),
-}
-
-ignite.metrics.RunningAverage(output_transform=lambda x: x).attach(trainer, "loss")
-
-# Evaluators
-train_evaluator = ignite.engine.create_supervised_evaluator(model, metrics=metrics, device=DEVICE)
-val_evaluator = ignite.engine.create_supervised_evaluator(model, metrics=metrics, device=DEVICE)
-
-# Logging
-train_evaluator.logger = ignite.utils.setup_logger("train")
-val_evaluator.logger = ignite.utils.setup_logger("val")
-
-# Add checkpointer
-# You can modify this to add checkpointing of best models
-checkpointer = ignite.handlers.ModelCheckpoint(
-    "./saved_models",
-    filename_prefix=dataset_name,
-    n_saved=2,
-    create_dir=True,
-    save_as_state_dict=True,
-    require_empty=False,
-)
-trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {model_name: model})
-
-# Add early stopping
-def score_function(engine):
-    val_loss = engine.state.metrics["nll"]
-    return -val_loss
-
-
-handler = ignite.handlers.EarlyStopping(patience=10, score_function=score_function, trainer=trainer)
-
-val_evaluator.add_event_handler(Events.COMPLETED, handler)
-
-# init variables for logging
-training_history = {"accuracy": [], "loss": []}
-validation_history = {"accuracy": [], "loss": []}
-last_epoch = []
-
-
-@trainer.on(Events.EPOCH_COMPLETED)
-def log_training_results(trainer):
-    train_evaluator.run(train_loader)
-    metrics = train_evaluator.state.metrics
-    accuracy = metrics["accuracy"] * 100
-    loss = metrics["nll"]
-    last_epoch.append(0)
-    training_history["accuracy"].append(accuracy)
-    training_history["loss"].append(loss)
-    print(
-        "Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(
-            trainer.state.epoch, accuracy, loss
-        )
-    )
-
-
-@trainer.on(Events.EPOCH_COMPLETED)
-def log_validation_results(trainer):
-    val_evaluator.run(val_loader)
-    metrics = val_evaluator.state.metrics
-    accuracy = metrics["accuracy"] * 100
-    loss = metrics["nll"]
-    validation_history["accuracy"].append(accuracy)
-    validation_history["loss"].append(loss)
-    print(
-        "Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(
-            trainer.state.epoch, accuracy, loss
-        )
-    )
-
-
-# %%
 # Run your training and plot your train/val metrics
 
 # %% [markdown]
@@ -362,6 +279,8 @@ def log_validation_results(trainer):
 # Instead this time we will plot the Precision Recall curve of our model which uses precision and recall to evaluate models.
 #
 # ![](https://cdn-images-1.medium.com/fit/t/1600/480/1*Ub0nZTXYT8MxLzrz0P7jPA.png)
+#
+# ![](https://modtools.files.wordpress.com/2020/01/roc_pr-1.png?w=946)
 #
 # Refer here for a tutorial on how to plot such curve:
 #
@@ -374,18 +293,150 @@ def log_validation_results(trainer):
 # https://www.datascienceblog.net/post/machine-learning/interpreting-roc-curves-auc/
 #
 # **e. Plot the ROC curve of your model as well as its PR Curve, on the test set, compare them, which is easier to interpret ?**
-#
+
+# %%
+# Plot ROC curve
+
+# %%
+# Plot PR curve
+
+# Compute PR Curve
+
+import numpy as np
+from sklearn.metrics import PrecisionRecallDisplay, average_precision_score, precision_recall_curve
+
+# We round predictions for better readability
+y_pred_probas = np.round(y_pred[:, 0], 2)
+
+precisions, recalls, thresholds = precision_recall_curve(y_true, y_pred_probas, pos_label=1)
+
+ap = average_precision_score(y_true, y_pred)
+
+plt.figure()
+lw = 2
+plt.plot(recalls, precisions, color="darkorange", lw=lw, label="PR Curve (AP = %0.2f)" % ap)
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.title("PR Curve")
+plt.legend(loc="lower right")
+plt.show()
+
+
+# %% [markdown]
 # **f. Can you understand why PR curve may be more useful than ROC curve for diagnosing model performance when dealing with imbalanced data ?**
-#
+
+# %%
+# Answer
+
+# %% [markdown]
 # **g. What is Fbeta-Score ? How can it help ? How do you chose beta?**
 #
 # Some reading: https://towardsdatascience.com/on-roc-and-precision-recall-curves-c23e9b63820c
 
 # %%
-# e & f here
+def fbeta(precision, recall, beta=1.0):
+    if p == 0.0 or r == 0.0:
+        return 0.0
+    else:
+        return (1 + beta ** 2) * (precision * recall) / (beta ** 2 * precision + recall)
+
 
 # %% [markdown]
-# ## Q2. Let's improve our model's performance
+# **h. Can you use the PR curve to choose a threshold ?**
+#
+# The same way you did for the ROC curve
+
+# %%
+# We round predictions every 0.05 for readability
+y_pred_probas = (y_pred[:, 0] / 0.05).astype(np.int) * 0.05
+
+precisions, recalls, thresholds = precision_recall_curve(y_true, y_pred_probas, pos_label=1)
+
+ap = average_precision_score(y_true, y_pred)
+
+plt.clf()
+fig = plt.figure(figsize=(10, 10))
+plt.step(recalls, precisions, "bo", alpha=0.2, where="post")
+plt.fill_between(recalls, precisions, alpha=0.2, color="b", step="post")
+
+for r, p, t in zip(recalls, precisions, thresholds):
+    plt.annotate(
+        np.round(t, 2),
+        xy=(r, p),
+        xytext=(r - 0.05, p - 0.05),
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
+    )
+
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.ylim([0.0, 1.05])
+plt.xlim([0.0, 1.0])
+plt.title("2-class Precision-Recall curve: AP={:0.2f}".format(ap))
+plt.show()
+
+# %% [markdown]
+# You can also use the fbeta score to find the best threshold, for example to maximise f1 or f2...
+#
+# ```python
+# def find_best_threshold(precisions, recalls, thresholds, beta=2.):
+#     best_fb = -np.inf
+#     best_t = None
+#     for t, p, r in zip(thresholds, precisions, recalls):
+#         fb = fbeta(p, r, beta=beta)
+#         if fb > best_fb:
+#             best_t = t
+#             best_fb = fb
+#
+#     return best_fb, best_t
+# ```
+
+# %%
+
+# %% [markdown]
+# ### Plot "hard" examples
+#
+# - Plot some of the missclassified examples that have true label = 0: Those are false positives
+# - Plot some of the missclassified examples that have true label = 1: those are false negatives (misses)
+#
+# Can you interpret the false positives ?
+#
+# Example for False Positives 
+#
+# ```python
+# misclassified_idxs = np.where(y_pred_classes == 1 && y_true == 0)[0]
+#
+#
+# print(len(misclassified_idxs))
+#
+# print(misclassified_idxs)
+#
+# misclassified_images = test_images[misclassified_idxs]
+# misclassified_true_labels = test_labels[misclassified_idxs]
+# misclassified_pred_labels = y_pred_classes[misclassified_idxs]
+#
+# grid_size = 4
+# grid = np.zeros((grid_size * 64, grid_size * 64, 3)).astype(np.uint8)
+# for i in range(grid_size):
+#     for j in range(grid_size):
+#         img = np.copy(misclassified_images[i * grid_size + j])
+#         pred = np.copy(misclassified_pred_labels[i * grid_size + j])
+#         color = (0, 255, 0) if pred == 1 else (255, 0, 0)
+#         tile = cv2.rectangle(img, (0, 0), (64, 64), color, thickness=2)
+#         grid[i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64, :] = img
+#
+# fig = plt.figure(figsize=(10, 10))
+# ax = fig.add_subplot(1, 1, 1)
+# ax.imshow(grid)
+# plt.show()
+# ```
+
+# %%
+# Do it here!
+
+# %% [markdown]
+# ## Q2. Class Imbalance
 #
 # We will try several things below. Those steps are only indicative and you are free to pursue other means of improving your model.
 #
@@ -405,18 +456,45 @@ def log_validation_results(trainer):
 #
 #
 # HINT:
-# - It's usually a mix of oversampling the minority class and undersampling the majority class
+# - It's usually a mix of **oversampling** the minority class and **undersampling** the majority class
 #
 # Some readings:
 # - https://www.kaggle.com/rafjaa/resampling-strategies-for-imbalanced-datasets (very well done)
 # - https://machinelearningmastery.com/framework-for-imbalanced-classification-projects/ (a bigger synthesis)
 # - https://machinelearningmastery.com/category/imbalanced-classification/
+#
+# Hint to get you started
+# ```python
+# background_indexes = np.where(trainval_labels == 0)
+# foreground_indexes = np.where(trainval_labels == 1)
+#
+# # Maybe select the same number of background and foreground classes to put into your training / validation set ?
+# ```
 
 # %%
 # Q2.a here
 
 # %% [markdown]
-# ### b. Optimizer and other hyperparameters modifications
+# ### b. Hard Example Mining
+#
+# Another solution is called "hard example mining" : You could balance your dataset like before, but this time do it "intelligently", for example by selecting false positives and false negatives. Those are "hard examples",
+#
+# Usually we also put "easy examples" otherwise our dataset may be very biased
+#
+# <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTA35C_SgBtMsS1bt_VR7HC2vDaK8zIlIyw9w&usqp=CAU" alt="drawing" width="400"/>
+#
+# You can see this effect easily on a confusion matrix :
+#
+# <img src="https://miro.medium.com/max/2102/1*fxiTNIgOyvAombPJx5KGeA.png" alt="drawing" width="400"/>
+#
+# If you want to rebalance your dataset by undersampling the 0 class, why not selecting more false positives than true negatives ?
+
+# %%
+
+# %% [markdown]
+# ## Q3. More Improvements
+#
+# ### c. [Optional] Optimizer and other hyperparameters modifications
 #
 # i ) Now that you have worked on your dataset and decided to undersample it, it's time to tune your network and your training configuration
 #
@@ -427,7 +505,7 @@ def log_validation_results(trainer):
 # %%
 
 # %% [markdown]
-# ### c. Going Further
+# ### d. [Optional] Going Further
 #
 # Here is an overview of [possible hyperparameter tuning when training Convolutional Neural Networks](https://towardsdatascience.com/hyper-parameter-tuning-techniques-in-deep-learning-4dad592c63c8)
 #
@@ -443,7 +521,7 @@ def log_validation_results(trainer):
 # Q2.c here
 
 # %% [markdown]
-# ### d. [Optional] Model architecture modification
+# ### e. [Optional] Model architecture modification
 #
 # There are no absolute law concerning the structure of your deep Learning model. During the [Deep Learning class](%matplotlib inline) you had an overview of existing models
 #

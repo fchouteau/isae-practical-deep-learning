@@ -61,7 +61,6 @@ import skimage
 import skimage.data
 from matplotlib import pyplot as plt
 
-# %%
 img = skimage.data.astronaut()
 
 plt.figure(figsize=(5, 5))
@@ -93,7 +92,7 @@ plt.show()
 # don't forget to convert the image type as the image are in unsigned type
 
 # %% tags=["solution"]
-plt.imshow((img[:, :, 0].astype(np.float32) - img[:, :, 2].astype(np.float32)))
+plt.imshow((img[:, :, 0].astype(np.float32) - img[:, :, 1].astype(np.float32)))
 plt.show()
 
 
@@ -236,6 +235,12 @@ plt.show()
 
 # %% [markdown]
 # If we wanted, we could learn the filters in order to do... cat classification !
+#
+# There are many more filters that have been designed to do interesting things, you can find an interesting list here : https://en.wikipedia.org/wiki/Kernel_(image_processing)
+#
+# ![](https://www.googleapis.com/download/storage/v1/b/kaggle-user-content/o/inbox%2F2141203%2F99dba888571cd6284b9b59903061aaa4%2Fko001.png?generation=1591783791920610&alt=media)
+#
+# **Takeaway message** : Kernel filtering (convolution) takes its root from classical image processing !
 
 # %% [markdown]
 # ### Convolutions with depth
@@ -265,7 +270,7 @@ w = np.random.random((1, 3, 3, 3))
 b = np.random.random((3,))
 
 # %%
-# You should remember this
+# You should remember this from the previous class, this is the general implementation of convolutions
 
 
 def forward_convolution(conv_W, conv_b, data):
@@ -273,6 +278,8 @@ def forward_convolution(conv_W, conv_b, data):
     Compute the output from a convolutional layer given the weights and data.
 
     conv_W is of the shape (# output channels, # input channels, convolution width, convolution height )
+    output_channels is the number of filters in the convolution
+
     conv_b is of the shape (# output channels)
 
     data is of the shape (# input channels, width, height)
@@ -318,7 +325,7 @@ print("Input", output.shape)
 
 plt.imshow(img.transpose((1, 2, 0)))
 plt.show()
-plt.imshow(output.transpose((1, 2, 0)[:,:,0]), cmap="gray")
+plt.imshow(output.transpose((1, 2, 0))[:, :, 0], cmap="gray")
 plt.show()
 
 # %% [markdown]
@@ -351,6 +358,10 @@ plt.show()
 #     - Example : Maximum
 #
 # ![](https://cdn-media-1.freecodecamp.org/images/Dgy6hBvOvAWofkrDM8BclOU3E3C2hqb25qBb)
+#
+# <img src="https://production-media.paperswithcode.com/methods/MaxpoolSample2.png" alt="drawing" width="400"/>
+#
+# Max pooling operations
 
 # %% [markdown]
 # Why do CNNs works ?
@@ -443,24 +454,22 @@ class CNN(nn.Module):
     def __init__(self, input_size, n_feature, output_size):
         super(CNN, self).__init__()
         self.n_feature = n_feature
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=n_feature, kernel_size=5)
-        self.conv2 = nn.Conv2d(n_feature, n_feature, kernel_size=5)
-        self.fc1 = nn.Linear(n_feature * 4 * 4, 50)
-        self.fc2 = nn.Linear(50, 10)
+        self.network = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=n_feature, kernel_size=5),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(n_feature, n_feature, kernel_size=5),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Flatten(),
+            nn.Linear(n_feature * 4 * 4, 50),
+            nn.ReLU(),
+            nn.Linear(50, 10),
+            nn.LogSoftmax(dim=1),
+        )
 
     def forward(self, x, verbose=False):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, kernel_size=2)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, kernel_size=2)
-        x = x.view(-1, self.n_feature * 4 * 4)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
-        x = F.log_softmax(x, dim=1)
-        return x
+        return self.network(x)
 
 
 # %% [markdown]
@@ -613,6 +622,7 @@ for epoch in range(0, 1):
     test(model_fnn, perm)
 
 # %% [markdown]
+# **Takeaway messages**
 #
 # The ConvNet's performance drops when we permute the pixels, but the Fully-Connected Network's performance stays the same
 #

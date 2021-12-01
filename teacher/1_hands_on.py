@@ -358,7 +358,7 @@ print(DEVICE)
 # - Pooling layer
 # - A final "activation" layer at the end (for classification) that allows us to output probabilities
 #
-# ![](https://cs231n.github.io/assets/cnn/convnet.jpeg)
+# ![](https://idiotdeveloper.com/wp-content/uploads/2021/05/1_uAeANQIOQPqWZnnuH-VEyw.jpg)
 #
 # Let's define a model together:
 #
@@ -378,6 +378,8 @@ print(DEVICE)
 #     # Another stack of these
 #     nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3),
 #     # OUT SHAPE (?,?,?)
+#     nn.ReLU(),
+#     nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3),
 #     nn.ReLU(),
 #     nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3),
 #     nn.ReLU(),
@@ -416,7 +418,7 @@ print(DEVICE)
 # %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "hd06b1EnC1yh", "outputId": "039eb3c0-b120-4288-e404-f1e70bb76a48"}
 # Let's test this !
 
-model = nn.Sequential(
+some_model = nn.Sequential(
     nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3),
     nn.ReLU(),
     nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3),
@@ -448,20 +450,20 @@ model = nn.Sequential(
 
 x = torch.rand((16, 3, 64, 64))  # We define an input of dimensions batch_size, channels, height, width
 
-y = model(x)
+y = some_model(x)
 
 print(y.shape)
 
 # let's delete the model now, we won't need it
 
-del model
-
+del some_model
 
 # %% [markdown] {"id": "YPpPpXwZC1yh"}
 # Do it yourself !
 
 # %% {"colab": {"base_uri": "https://localhost:8080/", "height": 398}, "id": "d5nx-e0VC1yh", "outputId": "b4f8293d-996e-4e95-bcbc-0442c991ebbe"}
 # Let's define another model, except this time there are blanks ... it's up to you to fill them
+
 
 def model_fn():
     model = nn.Sequential(
@@ -537,6 +539,18 @@ print(y.shape)
 # You should be able to understand this
 
 # %% {"tags": ["solution"], "id": "9gpZy_3cC1yk"}
+def _init_weights(model):
+    # about weight initialization
+    # https://machinelearningmastery.com/weight-initialization-for-deep-learning-neural-networks/
+    # https://www.pyimagesearch.com/2021/05/06/understanding-weight-initialization-for-neural-networks/
+    for m in model.modules():
+        # Initialize all convs
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+        if isinstance(m, nn.Linear):
+            nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+
+
 def model_fn():
     model = nn.Sequential(
         # A first convolution block
@@ -561,6 +575,8 @@ def model_fn():
         nn.Linear(in_features=64, out_features=1),
         nn.Sigmoid(),
     )
+
+    _init_weights(model)
 
     return model
 
@@ -664,7 +680,7 @@ def valid_one_epoch(model, valid_loader):
 
 
 # %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "6fwFxOOFGQkZ", "outputId": "a6da7c86-8233-4257-cf0f-86d6ff13ea88"}
-EPOCHS = ...  # Set number of epochs
+EPOCHS = 10  # Set number of epochs, example 100
 
 # Send model to GPU
 model = model.to(DEVICE)
@@ -686,7 +702,6 @@ for epoch in range(EPOCHS):
 
 # %% {"colab": {"base_uri": "https://localhost:8080/", "height": 279}, "id": "sFTlE66MC1yo", "outputId": "3f24cd80-7722-4228-e74e-7b4e2759fcb1"}
 # Plot training / validation loss
-
 plt.plot(train_losses, label="Training Loss")
 plt.plot(valid_losses, label="Validation Loss")
 plt.xlabel("No. of Epochs")
@@ -708,7 +723,7 @@ with open("model.pt", "wb") as f:
 del model
 
 # %% [markdown] {"id": "QW5XvyyZC1yq"}
-# ## Testing and metrics
+# ## Testing our models and computing metrics
 #
 # Now that we have a trained network, it is important to measure how well it performs. We do not do that during training because theoretically we try to test on a context closer to how the final model will be used, meaning this can be another pipeline and is usually outside the training engine.
 #
@@ -773,33 +788,43 @@ print(y_pred.shape)
 print(y_pred[4])
 
 # %% {"id": "aGqeE1UJC1ys"}
-y_pred_classes = np.round(y_pred[:, 0])
+y_pred_classes = y_pred[:, 0] > 0.5
 
 # %% [markdown] {"id": "wMuCtss8C1ys"}
 # ### Confusion matrix
 # Here, we are first computing the [confusion matrix]():
 
 # %% {"id": "QSq5-t7dC1yt"}
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 print("Confusion matrix")
-confusion_matrix(y_true, y_pred_classes)
+cm = confusion_matrix(y_true, y_pred_classes)
 
-# %% [markdown] {"id": "Ao41bfOuC1yt"}
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["background", "aircraft"])
+
+disp.plot()
+plt.show()
+
+# %% [markdown] {"id": "Ao41bfOuC1yt", "tags": []}
 # ### ROC curve
 #
-# The next metric we are computing is the [ROC curve](https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html).
+# The next metric we are computing is the [Receiver Operating Characteristic](https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html). A receiver operating characteristic curve, or ROC curve, is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The method was originally developed for operators of military radar receivers starting in 1941, which led to its name. 
 #
-# It used to choose a threshold on the output probability in case you are intesrested in controling the false positive rate.
+# ![](https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Roc_curve.svg/512px-Roc_curve.svg.png)
+#
+# ![](http://algolytics.com/wp-content/uploads/2018/05/roc1_en.png)
+#
+# It is used to choose a threshold on the output probability in case you are interesting in controling the false positive rate.
 
 # %% {"id": "sEj4ZBgTC1yt"}
+# Compute ROC curve and Area Under Curver
+
 from sklearn.metrics import auc, roc_curve
 
-# Compute ROC curve and ROC area for each class
+# We round predictions for better readability
+y_pred_probas = np.round(y_pred[:, 0], 2)
 
-y_pred = np.round(y_pred[:, 0], 3)
-
-fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+fpr, tpr, thresholds = roc_curve(y_true, y_pred_probas)
 roc_auc = auc(fpr, tpr)
 
 # %% {"id": "KGD6ukiMC1yu"}
@@ -816,41 +841,59 @@ plt.legend(loc="lower right")
 plt.show()
 
 # %% [markdown]
-# ### Using the ROC curve
+# ### Using the ROC curve to select an optimal threshold
 #
 # The ROC curve can be used to select the best decision threshold for classifying an aircraft as positive.
 #
 # Plot the ROC curve with thresholds assigned to points in the curve (you can round the predictions for a simpler curve)
-#
-# Example to adapt, and add thresholds to the plot
-#
-# ```python
-# def plot_roc_curve(fpr, tpr):
-#     plt.plot(fpr, tpr, color="orange", label="ROC")
-#     plt.plot([0, 1], [0, 1], color="darkblue", linestyle="--")
-#     plt.xlabel("False Positive Rate")
-#     plt.ylabel("True Positive Rate")
-#     plt.title("Receiver Operating Characteristic (ROC) Curve")
-#     plt.legend()
-#     plt.show()
-#
-#
-# y_true = np.array([0, 0, 1, 1, 1])
-# y_scores = np.array([0.0, 0.09, 0.05, 0.75, 1])
-#
-# fpr, tpr, thresholds = roc_curve(y_true, y_scores)
-# print(tpr)
-# print(fpr)
-# print(thresholds)
-# print(auc(y_true, y_scores))
-# optimal_idx = np.argmax(tpr - fpr)
-# optimal_threshold = thresholds[optimal_idx]
-# print("Threshold value is:", optimal_threshold)
-# plot_roc_curve(fpr, tpr)
-# ```
+
+# %% {"tags": []}
+# We round predictions every 0.05 for readability
+y_pred_probas = (y_pred[:, 0] / 0.05).astype(np.int) * 0.05
+
+fpr, tpr, thresholds = roc_curve(y_true, y_pred_probas)
+roc_auc = auc(fpr, tpr)
+
+plt.clf()
+fig = plt.figure(figsize=(10, 10))
+plt.step(fpr, tpr, "bo", alpha=0.2, where="post")
+plt.fill_between(fpr, tpr, alpha=0.2, color="b", step="post")
+
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.ylim([0.0, 1.05])
+plt.xlim([0.0, 1.0])
+plt.title("2-class ROC curve: AUC={:0.2f}".format(roc_auc))
+plt.plot([0, 1], [0, 1], color="darkblue", linestyle="--")
+
+for tp, fp, t in zip(tpr, fpr, thresholds):
+    plt.annotate(
+        np.round(t, 2),
+        xy=(fp, tp),
+        xytext=(fp - 0.05, tp - 0.05),
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
+    )
+plt.savefig("roc_curve_thresholds.png")
+plt.show()
+
+# %% [markdown]
+# Now, choose a threshold on the curve where you miss less than 10% of the aircrafts
 
 # %%
-# HERE !
+selected_threshold = ...
+
+print("Confusion matrix")
+
+y_pred_classes = y_pred_probas > selected_threshold
+
+cm = confusion_matrix(y_true, y_pred_classes)
+
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["background", "aircraft"])
+
+disp.plot()
+plt.show()
+
+# How did the confusion matrix evolve ? Does it match your intuition ?
 
 # %% [markdown] {"id": "ql5f8eLHC1yu"}
 # ### Misclassified examples
@@ -867,15 +910,16 @@ print(len(misclassified_idxs))
 print(misclassified_idxs)
 
 misclassified_images = test_images[misclassified_idxs]
-misclassified_labels = test_labels[misclassified_idxs]
+misclassified_true_labels = test_labels[misclassified_idxs]
+misclassified_pred_labels = y_pred_classes[misclassified_idxs]
 
 grid_size = 4
 grid = np.zeros((grid_size * 64, grid_size * 64, 3)).astype(np.uint8)
 for i in range(grid_size):
     for j in range(grid_size):
         img = np.copy(misclassified_images[i * grid_size + j])
-        lbl = np.copy(misclassified_labels[i * grid_size + j])
-        color = (0, 255, 0) if lbl == 1 else (255, 0, 0)
+        pred = np.copy(misclassified_pred_labels[i * grid_size + j])
+        color = (0, 255, 0) if pred == 1 else (255, 0, 0)
         tile = cv2.rectangle(img, (0, 0), (64, 64), color, thickness=2)
         grid[i * 64 : (i + 1) * 64, j * 64 : (j + 1) * 64, :] = img
 
@@ -1009,6 +1053,15 @@ plt.show()
 # do another training and plot our metrics again. Did we change something ?
 
 # %% [markdown]
+# ### [Optional] ReduceLR On Plateau
+#
+# Sometimes it's best to reduce the learning rate if you stop improving
+#
+# Tutorial : https://www.deeplearningwizard.com/deep_learning/boosting_models_pytorch/lr_scheduling/#reduce-on-loss-plateau-decay
+
+# %%
+
+# %% [markdown]
 # ## [Optional] Hyperparameter Tuning
 #
 # If you're done with this, you can explore a little bit more : Now that we have a nice training loop we can do hyperparameter tuning !
@@ -1109,7 +1162,7 @@ plt.show()
 # %%
 
 # %% [markdown] {"id": "kGeb1jfrC1y0"}
-# ## Next steps before the next notebooks
+# ## [Optional] Next steps before the next notebooks
 #
 # - Try to play with network hyperparameters. The dataset is small and allow fast iterations so use it to have an idea on hyperparameter sensitivity.
 #     number of convolutions, other network structures, learning rates, optimizers,...
@@ -1125,7 +1178,7 @@ plt.show()
 # %% {"id": "PE1sArquC1y0"}
 
 # %% [markdown] {"id": "HO3KmuKCC1y0"}
-# ## Food for thoughts: Tooling
+# ## [Optional] Food for thoughts: Tooling
 #
 # To conclude this notebook, reflect on the following,
 #
@@ -1134,7 +1187,7 @@ plt.show()
 # Did you feel the notebook you used was sufficient ? Which tools would you like to have in order to properly run your experiments ? (Quick google search or ask someone) Do they already exist ?
 
 # %% [markdown] {"id": "SMpLWDs-C1y0"}
-# ## High level frameworks
+# ### High level frameworks
 #
 # <img src="https://raw.githubusercontent.com/pytorch/ignite/master/assets/logo/ignite_logo_mixed.svg" alt="ignite" style="width: 400px;"/>
 #
@@ -1158,5 +1211,3 @@ plt.show()
 #
 #
 # **Take a look at the [previous class](https://nbviewer.jupyter.org/github/SupaeroDataScience/deep-learning/blob/main/deep/PyTorch%20Ignite.ipynb), the [official examples](https://nbviewer.jupyter.org/github/pytorch/ignite/tree/master/examples/notebooks/) or the [documentation](https://pytorch.org/ignite/) if want to learn about Ignite**
-
-# %%
