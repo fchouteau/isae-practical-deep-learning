@@ -90,9 +90,30 @@ print(np.unique(test_labels, return_counts=True))
 # Use stratified sampling to keep the label distribution between training and validation
 
 # %%
-# Hint to get your started
-background_indexes = np.where(trainval_labels == 0)
-foreground_indexes = np.where(trainval_labels == 1)
+
+background_indexes = np.where(trainval_labels == 0)[0]
+foreground_indexes = np.where(trainval_labels == 1)[0]
+
+train_bg_indexes = background_indexes[: int(0.8 * len(background_indexes))]
+valid_bg_indexes = background_indexes[int(0.8 * len(background_indexes)) :]
+
+train_fg_indexes = foreground_indexes[: int(0.8 * len(foreground_indexes))]
+valid_fg_indexes = foreground_indexes[int(0.8 * len(foreground_indexes)) :]
+
+train_indexes = list(train_bg_indexes) + list(train_fg_indexes)
+valid_indexes = list(valid_bg_indexes) + list(valid_fg_indexes)
+
+train_images = trainval_images[train_indexes, :, :, :]
+train_labels = trainval_labels[train_indexes]
+
+valid_images = trainval_images[valid_indexes, :, :, :]
+valid_labels = trainval_labels[valid_indexes]
+
+# %%
+print(np.unique(train_labels, return_counts=True))
+
+# %%
+print(np.unique(valid_labels, return_counts=True))
 
 # %%
 # Compute the dataset statistics in [0.,1.], we're going to use it to normalize our data
@@ -248,7 +269,7 @@ def model_fn():
         nn.Linear(in_features=256, out_features=1),
         nn.Sigmoid(),
     )
-    
+
     _init_weights(model)
 
     return model
