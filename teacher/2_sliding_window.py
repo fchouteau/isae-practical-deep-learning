@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.13.1
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -32,7 +32,13 @@
 # *Note:* We are training our model to recognize images at a single scale. Satellite imagery more or less prevents the foreground/background effect that sometimes require large changes in scale between training and testing for "normal" photography. So you can ignore the bits about the image pyramid on this issue (it is very good for general culture though, and can be applied in other use cases, or if we used multiscale training to "zoom" small aircrafts for example)
 # %%
 # Put your imports here
+import random
+
+import cv2
 import numpy as np
+from matplotlib import pyplot as plt
+from torch import nn
+from torchvision import transforms
 
 # %%
 # Global variables
@@ -55,13 +61,70 @@ eval_tiles = eval_tiles["eval_tiles"]
 # - The images are not labelled to prevent any "competition", the objective is just to apply it.
 
 # %%
+eval_tiles.shape
+
+# %%
+grid_size = 2
+grid = np.zeros((grid_size * 512, grid_size * 512, 3)).astype(np.uint8)
+for i in range(grid_size):
+    for j in range(grid_size):
+        tile = np.copy(eval_tiles[np.random.randint(0, eval_tiles.shape[0])])
+        grid[i * 512 : (i + 1) * 512, j * 512 : (j + 1) * 512, :] = tile
+
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(1, 1, 1)
+ax.imshow(grid)
+plt.show()
 
 # %% [markdown]
 # ## Reload your model
 #
-# Using the routines detailed in the previous notebook, reload your model
+# - Using the routines detailed in the previous notebook, upload the scripted model corresponding to the best training (don't forget to save it on the other notebooks) then reload the model
+#
+# - Find the mean / std of the dataset you trained with to normalize the images !
 
 # %%
+# from google.colab import files
+
+# uploaded = files.upload()
+
+# for fn in uploaded.keys():
+#     print(
+#         'User uploaded file "{name}" with length {length} bytes'.format(
+#             name=fn, length=len(uploaded[fn])
+#         )
+#     )
+
+# %%
+import torch.jit
+
+MODEL = torch.jit.load("scripted_model.pt", map_location="cpu")
+MODEL = MODEL.cpu().eval()
+
+# %%
+MEAN = ...
+
+STD = ...
+
+image_transforms = transforms.Compose(
+    [
+        transforms.ToTensor(),
+        transforms.Normalize(MEAN, STD),
+    ]
+)
+
+# %% {"tags": ["solution"]}
+MEAN = [0.33180826, 0.34381317, 0.32481512]
+
+STD = [0.16987269, 0.16662101, 0.16420361]
+
+image_transforms = transforms.Compose(
+    [
+        transforms.ToTensor(),
+        transforms.Normalize(MEAN, STD),
+    ]
+)
+
 
 # %% [markdown]
 # ## Implement the sliding window
@@ -81,11 +144,55 @@ eval_tiles = eval_tiles["eval_tiles"]
 # *Note*: The dataset labels were generated so that an image is considered an aircraft **if and only if the center of an aircraft lies in the center 32x32** of the 64x64 image
 
 # %%
+def apply_model_on_large_image(
+    img: np.ndarray, model: nn.Module, patch_size=64, patch_stride=32
+):
+    h, w, c = img.shape
+    coords = []
+
+    for i0 in range(0, h - patch_size + 1, patch_stride):
+        for j0 in range(0, w - patch_size + 1, patch_stride):
+            patch = img[i0 : i0 + patch_size, j0 : j0 + patch_size]
+            patch = image_transforms(patch).unsqueeze(0)
+
+            with torch.no_grad():
+                y_pred = model(patch)
+                y_pred = y_pred[0, 0].cpu().numpy()
+                if y_pred > 0.5:
+                    coords.append((i0 + 32, j0 + 32))
+    return coords
+
 
 # %% [markdown]
 # ## Apply the sliding window on the dataset and visualize results
 
 # %%
+k = np.random.randint(eval_tiles.shape[0])
+image = np.copy(eval_tiles[k])
+
+# %%
+results = apply_model_on_large_image(image, MODEL)
+
+
+# %%
+def plot_results_on_image(image: np.ndarray, results: results):
+    color = (0, 255, 0)
+
+    image0 = np.copy(image)
+
+    for ic, jc in results:
+        image = cv2.rectangle(
+            image, (jc - 32, ic - 32), (jc + 32, ic + 32), color, thickness=2
+        )
+    fig, ax = plt.subplots(2, 1, figsize=(20, 10))
+
+    ax[0].imshow(image0)
+    ax[1].imshow(image)
+    plt.show()
+
+
+# %%
+plot_results_on_image(image, results)
 
 # %% [markdown]
 # ## What's next ?
@@ -94,7 +201,7 @@ eval_tiles = eval_tiles["eval_tiles"]
 #
 # Are you satisfied with the behaviour of your model ?  Are there a lot of false positives ?
 #
-# If so, you can go back to 2/3 to tune your model and re-apply it.
+# If so, you can go back to the previous notebooks to tune your model and re-apply it.
 #
 # If you're out of your depth on how to improve your model... think about it ;)  You should be able to find news ideas because really, those problems have no end
 #

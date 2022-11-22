@@ -15,7 +15,7 @@ revealOptions:
 
 # Deep Learning in Practice
 
-**ISAE-SUPAERO, SDD, Nov/Dev 2021**
+**ISAE-SUPAERO, SDD, 23 Nov 2022**
 
 Florient CHOUTEAU, Quentin LETURGIE
 
@@ -133,7 +133,7 @@ This is a "hands-on", not a full class
 
 **More resources on DL for Computer Vision**
 
-- [http://cs231n.stanford.edu](http://cs231n.stanford.edu/)
+- [http://cs231n.stanford.edu](http://cs231n.stanford.edu/schedule.html)
 - [https://d2l.ai/index.html](https://d2l.ai/index.html)
 
 
@@ -444,6 +444,14 @@ ResNet(
 
 <!--v-->
 
+### At home
+
+- Continue the notebooks
+- Ask question on chat
+- Look at the Deep Learning classes of [cs231n](http://cs231n.stanford.edu/schedule.html)
+
+<!--v-->
+
 Welcome to the life of a deep learning engineer !
 
 ![train](static/img/model_train_img.png)
@@ -582,3 +590,57 @@ Readings:
 - [There is a huge ecosystem based around pytorch](https://pytorch.org/ecosystem/)
 
 ![](static/img/lightning.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
+
+<!--s-->
+
+### Extra : From classification to Detection
+
+<!--v-->
+
+We've done image classification that we applied in a sliding window fashion on larger images
+
+![sliding](static/img/sliding_window.gif)
+
+<!--v-->
+
+We can solve other types of tasks with ConvNets
+
+![tasks](static/img/computervision_tasks.png)  <!-- .element: style="width: 60%; height: 40%"--> 
+
+<!--v-->
+
+Image Segmentation
+
+![segmentation](https://s3-us-west-2.amazonaws.com/climate-com/images/encoderdecoder2.png)   <!-- .element: style="width: 60%; height: 40%"-->
+
+<!--v-->
+
+Object Detection (intuition)
+
+![objdet](https://miro.medium.com/max/1400/1*REPHY47zAyzgbNKC6zlvBQ.png)  <!-- .element: style="width: 60%; height: 40%"-->
+
+<!--v-->
+
+Object Detection (in practice)
+
+![objectdetection](https://www.mdpi.com/applsci/applsci-12-01291/article_deploy/html/images/applsci-12-01291-g001.png)   <!-- .element: style="width: 60%; height: 40%"-->
+
+<!--v-->
+
+Instance Segmentation
+
+![instseg](https://production-media.paperswithcode.com/methods/Screen_Shot_2020-05-23_at_7.44.34_PM.png)  <!-- .element: style="width: 60%; height: 40%"-->
+
+<!--v-->
+
+To learn more about this, see [this](http://cs231n.stanford.edu/slides/2022/lecture_9_jiajun.pdf)
+
+<!--v-->
+
+Other keywords that are important for CNN in Computer Vision
+
+- Self-Supervised Learning
+- Vision Transformers
+- (Generative Adversarial Networks)
+- Diffusion Models (Imagen, StableDiffusion, ...)
+

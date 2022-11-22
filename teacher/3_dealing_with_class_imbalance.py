@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.13.1
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -90,7 +90,6 @@ print(np.unique(test_labels, return_counts=True))
 # Use stratified sampling to keep the label distribution between training and validation
 
 # %%
-
 background_indexes = np.where(trainval_labels == 0)[0]
 foreground_indexes = np.where(trainval_labels == 1)[0]
 
@@ -204,13 +203,19 @@ target_transforms = None
 
 # load the training data
 train_set = NpArrayDataset(
-    images=..., labels=..., image_transforms=image_transforms, label_transforms=target_transforms
+    images=...,
+    labels=...,
+    image_transforms=image_transforms,
+    label_transforms=target_transforms,
 )
 train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
 
 # load the validation data
 validation_set = NpArrayDataset(
-    images=..., labels=..., image_transforms=image_transforms, label_transforms=target_transforms
+    images=...,
+    labels=...,
+    image_transforms=image_transforms,
+    label_transforms=target_transforms,
 )
 val_loader = DataLoader(validation_set, batch_size=64, shuffle=True)
 
@@ -291,6 +296,7 @@ criterion = ...
 
 # %%
 # Run your training and plot your train/val metrics
+# You can copy paste the functions and your loops that gives the best results
 
 # %% [markdown]
 # ### Test metrics, introduction to PR Curves
@@ -316,7 +322,7 @@ criterion = ...
 # **e. Plot the ROC curve of your model as well as its PR Curve, on the test set, compare them, which is easier to interpret ?**
 
 # %%
-# Plot ROC curve
+# Plot ROC curve as in the preview notebook
 
 # %%
 # Plot PR curve
@@ -324,18 +330,26 @@ criterion = ...
 # Compute PR Curve
 
 import numpy as np
-from sklearn.metrics import PrecisionRecallDisplay, average_precision_score, precision_recall_curve
+from sklearn.metrics import (
+    PrecisionRecallDisplay,
+    average_precision_score,
+    precision_recall_curve,
+)
 
 # We round predictions for better readability
 y_pred_probas = np.round(y_pred[:, 0], 2)
 
-precisions, recalls, thresholds = precision_recall_curve(y_true, y_pred_probas, pos_label=1)
+precisions, recalls, thresholds = precision_recall_curve(
+    y_true, y_pred_probas, pos_label=1
+)
 
 ap = average_precision_score(y_true, y_pred)
 
 plt.figure()
 lw = 2
-plt.plot(recalls, precisions, color="darkorange", lw=lw, label="PR Curve (AP = %0.2f)" % ap)
+plt.plot(
+    recalls, precisions, color="darkorange", lw=lw, label="PR Curve (AP = %0.2f)" % ap
+)
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel("Recall")
@@ -361,7 +375,7 @@ def fbeta(precision, recall, beta=1.0):
     if p == 0.0 or r == 0.0:
         return 0.0
     else:
-        return (1 + beta ** 2) * (precision * recall) / (beta ** 2 * precision + recall)
+        return (1 + beta**2) * (precision * recall) / (beta**2 * precision + recall)
 
 
 # %% [markdown]
@@ -373,7 +387,9 @@ def fbeta(precision, recall, beta=1.0):
 # We round predictions every 0.05 for readability
 y_pred_probas = (y_pred[:, 0] / 0.05).astype(np.int) * 0.05
 
-precisions, recalls, thresholds = precision_recall_curve(y_true, y_pred_probas, pos_label=1)
+precisions, recalls, thresholds = precision_recall_curve(
+    y_true, y_pred_probas, pos_label=1
+)
 
 ap = average_precision_score(y_true, y_pred)
 
@@ -509,13 +525,15 @@ plt.show()
 # <img src="https://miro.medium.com/max/2102/1*fxiTNIgOyvAombPJx5KGeA.png" alt="drawing" width="400"/>
 #
 # If you want to rebalance your dataset by undersampling the 0 class, why not selecting more false positives than true negatives ?
+#
+# **Try it !**
 
 # %%
 
 # %% [markdown]
-# ## Q3. More Improvements
+# ## Q3. **Optional** Exercises to run at home to improve your training
 #
-# ### c. [Optional] Optimizer and other hyperparameters modifications
+# ### a. Optimizer and other hyperparameters modifications
 #
 # i ) Now that you have worked on your dataset and decided to undersample it, it's time to tune your network and your training configuration
 #
@@ -526,7 +544,7 @@ plt.show()
 # %%
 
 # %% [markdown]
-# ### d. [Optional] Going Further
+# ### b. Going Further with hyperparameters tuning
 #
 # Here is an overview of [possible hyperparameter tuning when training Convolutional Neural Networks](https://towardsdatascience.com/hyper-parameter-tuning-techniques-in-deep-learning-4dad592c63c8)
 #
@@ -542,13 +560,13 @@ plt.show()
 # Q2.c here
 
 # %% [markdown]
-# ### e. [Optional] Model architecture modification
+# ### c. Model architecture modification
 #
 # There are no absolute law concerning the structure of your deep Learning model. During the [Deep Learning class](%matplotlib inline) you had an overview of existing models
 #
 # You can operate a modification on your structure and observe the effect on final metrics. Of course, remain consistent with credible models, cf Layer Patterns chapter on this "must view" course : http://cs231n.github.io/convolutional-networks/
 #
-# <img src="docs/static/img/comparison_architectures.png" alt="pokemon" style="width: 400px;"/>
+# <img src="https://github.com/fchouteau/isae-practical-deep-learning/blob/master/docs/static/img/comparison_architectures.png?raw=true" alt="pokemon" style="width: 400px;"/>
 #
 #
 # You can also use off the shelf architecture provided by torchvision, for example:
@@ -566,7 +584,7 @@ plt.show()
 # %%
 
 # %% [markdown]
-# ## Q3. Full Test whole dataset & more improvements
+# ### d. Full Test whole dataset
 #
 # a. Now that you have optimised your structure for your dataset, you will apply your model to the test dataset to see the final metrics. Plot all your metrics using the full imbalanced test set. Is it good enough ?
 # If you think so, you can apply it to new images using the sliding window technique with the 3rd notebook
@@ -577,7 +595,9 @@ plt.show()
 # Q3a
 
 # %% [markdown]
-# b. If you're not satisfied with the output of your model, consider the following idea: Training a new model with the failures of your previous model.
+# ### e. Training on hard examples
+#
+# If you're not satisfied with the output of your model, consider the following idea: Training a new model with the failures of your previous model.
 # Try the following:
 # - Get all the images with the "aircraft" label
 # - Get all the images with the "background" label where your best model was wrong (predicted aircraft), as well as some of the background where it was right.
@@ -588,7 +608,7 @@ plt.show()
 # Q3b
 
 # %% [markdown]
-# c . **SAVE YOUR MODEL**
+# ### f. **SAVE YOUR MODEL**
 
 # %%
 # Q3c

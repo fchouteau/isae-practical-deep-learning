@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 import pandas as pd
+
 from khumeia import LOGGER
 
 __all__ = ["download_data", "make_image_ids", "make_labels"]
@@ -41,7 +42,8 @@ def download_data(raw_data_dir: Path):
     (raw_data_dir / "eval").mkdir(exist_ok=True)
 
     for cmd in cmds:
-        subprocess.check_call(cmd, shell=True)
+        LOGGER.info(" ".join(cmd))
+        subprocess.check_call(cmd, shell=False)
     for outlier in outliers:
         try:
             (raw_data_dir / "trainval" / outlier).unlink(missing_ok=True)

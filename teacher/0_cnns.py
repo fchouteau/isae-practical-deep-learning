@@ -7,11 +7,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.13.1
+#       jupytext_version: 1.14.1
 #   kernelspec:
-#     display_name: py38-isae
+#     display_name: py39-isae
 #     language: python
-#     name: py38-isae
+#     name: py39-isae
 # ---
 
 # %% [markdown]
@@ -19,7 +19,7 @@
 #
 # <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" align="left" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>&nbsp;| Florient Chouteau | <a href="https://supaerodatascience.github.io/deep-learning/">https://supaerodatascience.github.io/deep-learning/</a>
 #
-# # Session 1 : About Convolutions and CNNs ...
+# ## Session 1 : About Convolutions and CNNs ...
 #
 # Welcome to this BE about applying Deep Learning for Computer Vision
 #
@@ -61,6 +61,7 @@ import skimage
 import skimage.data
 from matplotlib import pyplot as plt
 
+# %%
 img = skimage.data.astronaut()
 
 plt.figure(figsize=(5, 5))
@@ -92,7 +93,9 @@ plt.show()
 # don't forget to convert the image type as the image are in unsigned type
 
 # %% tags=["solution"]
-plt.imshow((img[:, :, 0].astype(np.float32) - img[:, :, 1].astype(np.float32)))
+plt.imshow(
+    (img[:, :, 0].astype(np.float32) - img[:, :, 1].astype(np.float32)), cmap="jet"
+)
 plt.show()
 
 
@@ -265,7 +268,7 @@ img.shape
 img = img.transpose((2, 0, 1))  # change channel order
 img.shape
 
-# %%
+# %% tags=[]
 w = np.random.random((1, 3, 3, 3))
 b = np.random.random((3,))
 
@@ -295,7 +298,9 @@ def forward_convolution(conv_W, conv_b, data):
 
     input_channels, input_width, input_height = data.shape
 
-    output = np.zeros((conv_channels, input_width - conv_width + 1, input_height - conv_height + 1))
+    output = np.zeros(
+        (conv_channels, input_width - conv_width + 1, input_height - conv_height + 1)
+    )
 
     for x in range(input_width - conv_width + 1):
         for y in range(input_height - conv_height + 1):
@@ -303,7 +308,8 @@ def forward_convolution(conv_W, conv_b, data):
                 output[output_channel, x, y] = (
                     np.sum(
                         np.multiply(
-                            data[:, x : (x + conv_width), y : (y + conv_height)], conv_W[output_channel, :, :, :]
+                            data[:, x : (x + conv_width), y : (y + conv_height)],
+                            conv_W[output_channel, :, :, :],
                         )
                     )
                     + conv_b[output_channel]
@@ -311,18 +317,20 @@ def forward_convolution(conv_W, conv_b, data):
 
     return output
 
+# %% tags=[]
+# Convolve the input with the weights and bias
+
+
+# %% tags=["solution"]
+output = forward_convolution(w, b, img)
 
 # %%
-rng = np.random.default_rng()
-
-output = forward_convolution(w, b, img)
 print("Input", img.shape)
-print("Filter:\n", w, w.shape)
+print(f"Filter:\n {w} \n {w.shape}")
 print("Bias:", b, b.shape)
 print("Input", output.shape)
 
 # Don't forget that matplotlib uses (h,w,c) to plot images !
-
 plt.imshow(img.transpose((1, 2, 0)))
 plt.show()
 plt.imshow(output.transpose((1, 2, 0))[:, :, 0], cmap="gray")
@@ -342,8 +350,8 @@ plt.show()
 #
 # Remember, an Artificial Neural Network is a stack of 
 #
-#     "Fully Connected" layers
-#     Non linearities
+# - "Fully Connected" layers
+# - Non linearities
 #
 # A Convolutional Neural Network is a stack of
 # - Convolutional Layers aka Filter Banks
@@ -378,6 +386,9 @@ plt.show()
 #     Convolutions: locality + stationarity of images
 #     Pooling: Invariance of object class to translations
 
+# %% [markdown]
+# ### Definitions
+
 # %%
 import torch
 import torch.nn as nn
@@ -394,7 +405,9 @@ train_loader = torch.utils.data.DataLoader(
         "../data",
         train=True,
         download=True,
-        transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+        transform=transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        ),
     ),
     batch_size=64,
     shuffle=True,
@@ -404,7 +417,9 @@ test_loader = torch.utils.data.DataLoader(
     datasets.MNIST(
         "../data",
         train=False,
-        transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]),
+        transform=transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        ),
     ),
     batch_size=1000,
     shuffle=True,
@@ -430,8 +445,6 @@ def get_n_params(model):
 
 
 # Create two models: One ANN vs One CNN
-
-
 class FullyConnected2Layers(nn.Module):
     def __init__(self, input_size, n_hidden, output_size):
         super(FullyConnected2Layers, self).__init__()
@@ -523,8 +536,12 @@ def test(model, perm=torch.arange(0, 784).long()):
         data = data[:, perm]
         data = data.view(-1, 1, 28, 28)
         output = model(data)
-        test_loss += F.nll_loss(output, target, reduction="sum").item()  # sum up batch loss
-        pred = output.data.max(1, keepdim=True)[1]  # get the index of the max log-probability
+        test_loss += F.nll_loss(
+            output, target, reduction="sum"
+        ).item()  # sum up batch loss
+        pred = output.data.max(1, keepdim=True)[
+            1
+        ]  # get the index of the max log-probability
         correct += pred.eq(target.data.view_as(pred)).cpu().sum().item()
 
     test_loss /= len(test_loader.dataset)
@@ -549,6 +566,7 @@ n_hidden = 8  # number of hidden units
 model_fnn = FullyConnected2Layers(input_size, n_hidden, output_size)
 model_fnn.to(device)
 optimizer = optim.SGD(model_fnn.parameters(), lr=0.01, momentum=0.5)
+
 print("Number of parameters: {}".format(get_n_params(model_fnn)))
 
 for epoch in range(0, 1):
@@ -565,6 +583,7 @@ n_features = 6  # number of feature maps
 model_cnn = CNN(input_size, n_features, output_size)
 model_cnn.to(device)
 optimizer = optim.SGD(model_cnn.parameters(), lr=0.01, momentum=0.5)
+
 print("Number of parameters: {}".format(get_n_params(model_cnn)))
 
 for epoch in range(0, 1):
@@ -579,6 +598,12 @@ for epoch in range(0, 1):
 
 # %% [markdown]
 # ### What happens when CNNs assumptions are not true ?
+#
+# We will deterministically permute pixels so that the content of an image is respected but not its structure
+#
+# Basically transform some positions into others
+#
+# And we will train networks on this
 
 # %%
 perm = torch.randperm(784)
@@ -633,7 +658,11 @@ for epoch in range(0, 1):
 #     But it doesn't suffer when the assumption is wrong
 
 # %%
-plt.bar(("NN normal", "CNN normal", "CNN scrambled", "NN scrambled"), accuracy_list, width=0.4)
+plt.bar(
+    ("NN normal", "CNN normal", "CNN scrambled", "NN scrambled"),
+    accuracy_list,
+    width=0.4,
+)
 plt.ylim((min(accuracy_list) - 5, 96))
 plt.ylabel("Accuracy [%]")
 for tick in plt.gca().xaxis.get_major_ticks():

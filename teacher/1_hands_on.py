@@ -8,7 +8,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.13.1
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -34,6 +34,11 @@
 # During session 2 you will be experimenting with harder datasets
 #
 # If you haven't done so, go to the previous notebooks to get a hands on pytorch and CNNs
+#
+#
+# **First steps**
+# - Activate the GPU runtime in colab
+# - Check using `!nvidia-smi` that you detect it
 
 # %% {"id": "xEo4VpHqC1yF"}
 # %matplotlib inline
@@ -41,6 +46,458 @@
 # %% {"id": "FG3_sWsWC1yH"}
 # Put your imports here
 import numpy as np
+
+# %% [markdown] {"tags": []}
+# ## Utils Definition / Ignore & hide
+#
+# Execute once and hide this section
+
+# %%
+# IGNORE THIS FUNCTION THIS IS AN UTIL, just execute once
+# Copyright The PyTorch Lightning team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import warnings
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import torch
+import torch.nn as nn
+from torch import Tensor
+from torch.utils.hooks import RemovableHandle
+
+PARAMETER_NUM_UNITS = [" ", "K", "M", "B", "T"]
+UNKNOWN_SIZE = "?"
+
+
+class LayerSummary:
+    """Summary class for a single layer in a :class:`~torch.nn.Module`.
+
+    It collects the following information:
+
+    * Type of the layer (e.g. Linear, BatchNorm1d, ...)
+    * Input shape
+    * Output shape
+    * Number of parameters
+
+    The input and output shapes are only known after the example input array was
+    passed through the model.
+
+    Example::
+        >>> model = torch.nn.Conv2d(3, 8, 3)
+        >>> summary = LayerSummary(model)
+        >>> summary.num_parameters
+        224
+        >>> summary.layer_type
+        'Conv2d'
+        >>> output = model(torch.rand(1, 3, 5, 5))
+        >>> summary.in_size
+        [1, 3, 5, 5]
+        >>> summary.out_size
+        [1, 8, 3, 3]
+
+    Args:
+        module: A module to summarize
+    """
+
+    def __init__(self, module: nn.Module) -> None:
+        super().__init__()
+        self._module = module
+        self._hook_handle = self._register_hook()
+        self._in_size: Optional[Union[str, List]] = None
+        self._out_size: Optional[Union[str, List]] = None
+
+    def __del__(self) -> None:
+        self.detach_hook()
+
+    def _register_hook(self) -> Optional[RemovableHandle]:
+        """Registers a hook that computes the input/output size(s) on the first forward pass.
+
+        If the hook is called, it will remove itself from the from the module, meaning that
+        recursive models will only record their input- and output shapes once.
+
+        Registering hooks on :class:`~torch.jit.ScriptModule` is not supported.
+
+        Return:
+            A handle for the installed hook, or ``None`` if registering the hook is not possible.
+        """
+
+        def hook(_: nn.Module, inp: Any, out: Any) -> None:
+            if len(inp) == 1:
+                inp = inp[0]
+            self._in_size = parse_batch_shape(inp)
+            self._out_size = parse_batch_shape(out)
+            assert self._hook_handle is not None
+            self._hook_handle.remove()
+
+        handle = None
+        if not isinstance(self._module, torch.jit.ScriptModule):
+            handle = self._module.register_forward_hook(hook)
+        return handle
+
+    def detach_hook(self) -> None:
+        """Removes the forward hook if it was not already removed in the forward pass.
+
+        Will be called after the summary is created.
+        """
+        if self._hook_handle is not None:
+            self._hook_handle.remove()
+
+    @property
+    def in_size(self) -> Union[str, List]:
+        return self._in_size or UNKNOWN_SIZE
+
+    @property
+    def out_size(self) -> Union[str, List]:
+        return self._out_size or UNKNOWN_SIZE
+
+    @property
+    def layer_type(self) -> str:
+        """Returns the class name of the module."""
+        return str(self._module.__class__.__name__)
+
+    @property
+    def num_parameters(self) -> int:
+        """Returns the number of parameters in this module."""
+        return sum(
+            np.prod(p.shape) if not _is_lazy_weight_tensor(p) else 0
+            for p in self._module.parameters()
+        )
+
+
+class ModelSummary:
+    """Generates a summary of all layers in a :class:`~torch.nn.Module`.
+
+    Args:
+        model: The model to summarize (also referred to as the root module).
+        max_depth: Maximum depth of modules to show. Use -1 to show all modules or 0 to show no
+            summary. Defaults to 1.
+        example_input_array (torch.Tensor): If provided, and example input aray which will be used
+            to infer the shape of tensors throughout the model.
+
+    The string representation of this summary prints a table with columns containing
+    the name, type and number of parameters for each layer.
+    The root module may also have an attribute ``example_input_array`` as shown in the example
+    below.
+
+    If present, the root module will be called with it as input to determine the
+    intermediate input- and output shapes of all layers. Supported are tensors and
+    nested lists and tuples of tensors. All other types of inputs will be skipped and show as `?`
+    in the summary table. The summary will also display `?` for layers not used in the forward pass.
+
+    Example::
+        >>> from torch.nn import Module
+        >>> class LitModel(Module):
+        ...
+        ...     def __init__(self):
+        ...         super().__init__()
+        ...         self.net = nn.Sequential(nn.Linear(256, 512), nn.BatchNorm1d(512))
+        ...         self.example_input_array = torch.zeros(10, 256)  # optional
+        ...
+        ...     def forward(self, x):
+        ...         return self.net(x)
+        ...
+        >>> model = LitModel()
+        >>> ModelSummary(model, max_depth=1)  # doctest: +NORMALIZE_WHITESPACE
+          | Name | Type       | Params | In sizes  | Out sizes
+        ------------------------------------------------------------
+        0 | net  | Sequential | 132 K  | [10, 256] | [10, 512]
+        ------------------------------------------------------------
+        132 K     Trainable params
+        0         Non-trainable params
+        132 K     Total params
+        0.530     Total estimated model params size (MB)
+        >>> ModelSummary(model, max_depth=-1)  # doctest: +NORMALIZE_WHITESPACE
+          | Name  | Type        | Params | In sizes  | Out sizes
+        --------------------------------------------------------------
+        0 | net   | Sequential  | 132 K  | [10, 256] | [10, 512]
+        1 | net.0 | Linear      | 131 K  | [10, 256] | [10, 512]
+        2 | net.1 | BatchNorm1d | 1.0 K    | [10, 512] | [10, 512]
+        --------------------------------------------------------------
+        132 K     Trainable params
+        0         Non-trainable params
+        132 K     Total params
+        0.530     Total estimated model params size (MB)
+    """
+
+    def __init__(self, model, max_depth=1, example_input_array=None) -> None:
+        self._model = model
+
+        # temporary mapping from mode to max_depth
+        if not isinstance(max_depth, int) or max_depth < -1:
+            raise ValueError(f"`max_depth` can be -1, 0 or > 0, got {max_depth}.")
+
+        self._max_depth = max_depth
+        self._example_input_array = example_input_array
+        self._layer_summary = self.summarize(example_input_array=example_input_array)
+        # 1 byte -> 8 bits
+        # TODO: how do we compute precision_megabytes in case of mixed precision?
+        precision = 32  # Fixme: Get precision from global dtype attribute
+        self._precision_megabytes = (precision / 8.0) * 1e-6
+
+    @property
+    def named_modules(self) -> List[Tuple[str, nn.Module]]:
+        mods: List[Tuple[str, nn.Module]]
+        if self._max_depth == 0:
+            mods = []
+        elif self._max_depth == 1:
+            # the children are the top-level modules
+            mods = list(self._model.named_children())
+        else:
+            mods = self._model.named_modules()
+            mods = list(mods)[1:]  # do not include root module (LightningModule)
+        return mods
+
+    @property
+    def layer_names(self) -> List[str]:
+        return list(self._layer_summary.keys())
+
+    @property
+    def layer_types(self) -> List[str]:
+        return [layer.layer_type for layer in self._layer_summary.values()]
+
+    @property
+    def in_sizes(self) -> List:
+        return [layer.in_size for layer in self._layer_summary.values()]
+
+    @property
+    def out_sizes(self) -> List:
+        return [layer.out_size for layer in self._layer_summary.values()]
+
+    @property
+    def param_nums(self) -> List[int]:
+        return [layer.num_parameters for layer in self._layer_summary.values()]
+
+    @property
+    def total_parameters(self) -> int:
+        return sum(
+            p.numel() if not _is_lazy_weight_tensor(p) else 0
+            for p in self._model.parameters()
+        )
+
+    @property
+    def trainable_parameters(self) -> int:
+        return sum(
+            p.numel() if not _is_lazy_weight_tensor(p) else 0
+            for p in self._model.parameters()
+            if p.requires_grad
+        )
+
+    @property
+    def model_size(self) -> float:
+        # todo: seems it does not work with quantized models - it returns 0.0
+        return self.total_parameters * self._precision_megabytes
+
+    def summarize(self, example_input_array=None) -> Dict[str, LayerSummary]:
+        summary = OrderedDict(
+            (name, LayerSummary(module)) for name, module in self.named_modules
+        )
+
+        if example_input_array is not None:
+            self._forward_example_input(example_input_array)
+
+        for layer in summary.values():
+            layer.detach_hook()
+
+        if self._max_depth >= 1:
+            # remove summary entries with depth > max_depth
+            for k in [k for k in summary if k.count(".") >= self._max_depth]:
+                del summary[k]
+
+        return summary
+
+    def _forward_example_input(self, example_input_array) -> None:
+        """Run the example input through each layer to get input- and output sizes."""
+        model = self._model
+
+        mode = model.training
+        model.eval()
+        with torch.no_grad():
+            # let the model hooks collect the input- and output shapes
+            if isinstance(example_input_array, (list, tuple)):
+                model(*example_input_array)
+            elif isinstance(example_input_array, dict):
+                model(**example_input_array)
+            else:
+                model(example_input_array)
+        model.train(mode)  # restore mode of module
+
+    def _get_summary_data(self) -> List[Tuple[str, List[str]]]:
+        """Makes a summary listing with:
+
+        Layer Name, Layer Type, Number of Parameters, Input Sizes, Output Sizes, Model Size
+        """
+        arrays = [
+            (" ", list(map(str, range(len(self._layer_summary))))),
+            ("Name", self.layer_names),
+            ("Type", self.layer_types),
+            ("Params", list(map(get_human_readable_count, self.param_nums))),
+        ]
+        if self._example_input_array is not None:
+            arrays.append(("In sizes", [str(x) for x in self.in_sizes]))
+            arrays.append(("Out sizes", [str(x) for x in self.out_sizes]))
+
+        return arrays
+
+    def __str__(self) -> str:
+        arrays = self._get_summary_data()
+
+        total_parameters = self.total_parameters
+        trainable_parameters = self.trainable_parameters
+        model_size = self.model_size
+
+        return _format_summary_table(
+            total_parameters, trainable_parameters, model_size, *arrays
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+def parse_batch_shape(batch: Any) -> Union[str, List]:
+    if hasattr(batch, "shape"):
+        return list(batch.shape)
+
+    if isinstance(batch, (list, tuple)):
+        shape = [parse_batch_shape(el) for el in batch]
+        return shape
+
+    return UNKNOWN_SIZE
+
+
+def _format_summary_table(
+    total_parameters: int,
+    trainable_parameters: int,
+    model_size: float,
+    *cols: Tuple[str, List[str]],
+) -> str:
+    """Takes in a number of arrays, each specifying a column in the summary table, and combines them all into one
+    big string defining the summary table that are nicely formatted."""
+    n_rows = len(cols[0][1])
+    n_cols = 1 + len(cols)
+
+    # Get formatting width of each column
+    col_widths = []
+    for c in cols:
+        col_width = max(len(str(a)) for a in c[1]) if n_rows else 0
+        col_width = max(col_width, len(c[0]))  # minimum length is header length
+        col_widths.append(col_width)
+
+    # Formatting
+    s = "{:<{}}"
+    total_width = sum(col_widths) + 3 * n_cols
+    header = [s.format(c[0], l) for c, l in zip(cols, col_widths)]
+
+    # Summary = header + divider + Rest of table
+    summary = " | ".join(header) + "\n" + "-" * total_width
+    for i in range(n_rows):
+        line = []
+        for c, l in zip(cols, col_widths):
+            line.append(s.format(str(c[1][i]), l))
+        summary += "\n" + " | ".join(line)
+    summary += "\n" + "-" * total_width
+
+    summary += "\n" + s.format(get_human_readable_count(trainable_parameters), 10)
+    summary += "Trainable params"
+    summary += "\n" + s.format(
+        get_human_readable_count(total_parameters - trainable_parameters), 10
+    )
+    summary += "Non-trainable params"
+    summary += "\n" + s.format(get_human_readable_count(total_parameters), 10)
+    summary += "Total params"
+    summary += "\n" + s.format(get_formatted_model_size(model_size), 10)
+    summary += "Total estimated model params size (MB)"
+
+    return summary
+
+
+def get_formatted_model_size(total_model_size: float) -> str:
+    return f"{total_model_size:,.3f}"
+
+
+def get_human_readable_count(number: int) -> str:
+    """Abbreviates an integer number with K, M, B, T.
+
+    Examples:
+        >>> get_human_readable_count(123)
+        '123  '
+        >>> get_human_readable_count(1234)  # (one thousand)
+        '1.2 K'
+        >>> get_human_readable_count(2e6)   # (two million)
+        '2.0 M'
+        >>> get_human_readable_count(3e9)   # (three billion)
+        '3.0 B'
+        >>> get_human_readable_count(4e14)  # (four hundred trillion)
+        '400 T'
+        >>> get_human_readable_count(5e15)  # (more than trillion)
+        '5,000 T'
+
+    Args:
+        number: a positive integer number
+
+    Return:
+        A string formatted according to the pattern described above.
+    """
+    assert number >= 0
+    labels = PARAMETER_NUM_UNITS
+    num_digits = int(np.floor(np.log10(number)) + 1 if number > 0 else 1)
+    num_groups = int(np.ceil(num_digits / 3))
+    num_groups = min(num_groups, len(labels))  # don't abbreviate beyond trillions
+    shift = -3 * (num_groups - 1)
+    number = number * (10**shift)
+    index = num_groups - 1
+    if index < 1 or number >= 100:
+        return f"{int(number):,d} {labels[index]}"
+
+    return f"{number:,.1f} {labels[index]}"
+
+
+def _is_lazy_weight_tensor(p: Tensor) -> bool:
+    from torch.nn.parameter import UninitializedParameter
+
+    if isinstance(p, UninitializedParameter):
+        warnings.warn(
+            "A layer with UninitializedParameter was found. "
+            "Thus, the total number of parameters detected may be inaccurate.",
+            UserWarning,
+        )
+        return True
+
+    return False
+
+
+def summarize(module, max_depth=None, example_input_array=None) -> ModelSummary:
+    """Summarize a PyTorch module.
+
+    Args:
+        module: The module to summarize.
+        max_depth: The maximum depth of layer nesting that the summary will include. A value of 0
+            turns the layer summary off. Default: 1.
+        example_input_array (torch.Tensor): If provided, and example input aray which will be used
+            to infer the shape of tensors throughout the model.
+
+    Return:
+        The model summary object
+    """
+    max_depth = 1 if max_depth is None else max_depth
+    model_summary = ModelSummary(
+        module, max_depth=max_depth, example_input_array=example_input_array
+    )
+
+    return model_summary
+
 
 # %% [markdown] {"id": "1nb7isjuC1yI"}
 # ## Dataset
@@ -125,7 +582,9 @@ for l, c, label in zip(*np.unique(trainval_labels, return_counts=True), LABEL_NA
     print(f" Label: {label} , value: {l}, count: {c}")
 
 for l, label in enumerate(LABEL_NAMES):
-    print(f"Examples shape for label {l} : {trainval_images[trainval_labels == l, ::].shape}")
+    print(
+        f"Examples shape for label {l} : {trainval_images[trainval_labels == l, ::].shape}"
+    )
 
 # %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "ArvB0PsXC1yW", "outputId": "84db6bb2-22b4-4384-d197-2ddcac18d9fd"}
 LABEL_NAMES = ["Not an aircraft", "Aircraft"]
@@ -293,7 +752,10 @@ target_transforms = None
 # %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "CR14oNXyC1yd", "outputId": "55d52439-7ffc-46a6-d7fb-13c0b173e761"}
 # load the training data
 train_set = NpArrayDataset(
-    images=train_images, labels=train_labels, image_transforms=image_transforms, label_transforms=target_transforms
+    images=train_images,
+    labels=train_labels,
+    image_transforms=image_transforms,
+    label_transforms=target_transforms,
 )
 
 print(len(train_set))
@@ -302,7 +764,10 @@ train_loader = DataLoader(train_set, batch_size=64, shuffle=True)
 
 # load the validation data
 validation_set = NpArrayDataset(
-    images=val_images, labels=val_labels, image_transforms=image_transforms, label_transforms=target_transforms
+    images=val_images,
+    labels=val_labels,
+    image_transforms=image_transforms,
+    label_transforms=target_transforms,
 )
 
 print(len(validation_set))
@@ -339,7 +804,12 @@ plt.imshow(train_set.images[k])
 plt.show()
 
 # %% [markdown] {"id": "4np1A43JC1yf"}
-# Model
+# ## Model
+
+# %% [markdown]
+# ### On which device will we train ?
+#
+# We will check if we have a GPU and set the "device" of pytorch on it so that it trains on GPU 
 
 # %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "BmV9carLC1yf", "outputId": "dba28689-a129-4ae1-facc-41f9d3e55f8e"}
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -347,7 +817,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
 # %% [markdown] {"id": "AJ3oVqOHC1yg"}
-# ### Defining a model
+# ### Defining a model and computing the parameters
 #
 # Now we have to define a CNN to train. It's usually called a "network", and we define its "architecture".
 #
@@ -358,7 +828,7 @@ print(DEVICE)
 # - Pooling layer
 # - A final "activation" layer at the end (for classification) that allows us to output probabilities
 #
-# ![](https://idiotdeveloper.com/wp-content/uploads/2021/05/1_uAeANQIOQPqWZnnuH-VEyw.jpg)
+# ![](https://cs231n.github.io/assets/cnn/convnet.jpeg)
 #
 # Let's define a model together:
 #
@@ -448,21 +918,39 @@ some_model = nn.Sequential(
     nn.Sigmoid(),
 )
 
-x = torch.rand((16, 3, 64, 64))  # We define an input of dimensions batch_size, channels, height, width
+# We define an input of dimensions batch_size, channels, height, width
+x = torch.rand((16, 3, 64, 64))
+
+print(x.shape)
 
 y = some_model(x)
 
 print(y.shape)
 
-# let's delete the model now, we won't need it
+# Let's visualize each shape using our summarize helper
+print(summarize(some_model, example_input_array=x))
 
+# let's delete the model now, we won't need it
 del some_model
 
 # %% [markdown] {"id": "YPpPpXwZC1yh"}
-# Do it yourself !
+# **Let's do it yourself !**
+#
+# About weight init :
+# - https://machinelearningmastery.com/weight-initialization-for-deep-learning-neural-networks/
+# - https://www.pyimagesearch.com/2021/05/06/understanding-weight-initialization-for-neural-networks/
 
 # %% {"colab": {"base_uri": "https://localhost:8080/", "height": 398}, "id": "d5nx-e0VC1yh", "outputId": "b4f8293d-996e-4e95-bcbc-0442c991ebbe"}
 # Let's define another model, except this time there are blanks ... it's up to you to fill them
+
+
+def _init_weights(model):
+    for m in model.modules():
+        # Initialize all convs
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+        if isinstance(m, nn.Linear):
+            nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
 
 
 def model_fn():
@@ -493,11 +981,14 @@ def model_fn():
     return model
 
 
+# %%
 model = model_fn()
 
 print(model)
 
-x = torch.rand((16, 3, 64, 64))  # We define an input of dimensions batch_size, channels, height, width
+x = torch.rand(
+    (16, 3, 64, 64)
+)  # We define an input of dimensions batch_size, channels, height, width
 
 print(x.shape)
 
@@ -505,36 +996,128 @@ y = model(x)
 
 print(y.shape)
 
+print(summarize(model, example_input_array=x))
+
 # THIS CELL SHOULD NOT GIVE AN ERROR !
 
 # %% [markdown] {"id": "nxb-JeDnC1yk"}
 # Hint: The answer (and there can only be one) is :
 #
+# <details>
+#     <summary>Solution</summary> 
+#     
 # ```python
-# model = nn.Sequential(
-#     # A first convolution block
-#     nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3),
-#     nn.ReLU(),
-#     nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3),
-#     nn.ReLU(),
-#     nn.MaxPool2d(2),
-#     # Another stack of these
-#     nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3),
-#     nn.ReLU(),
-#     nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3),
-#     nn.ReLU(),
-#     nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3),
-#     nn.ReLU(),
-#     nn.MaxPool2d(2),
-#     # A final classifier
-#     nn.Flatten(),
-#     nn.Linear(in_features=12 * 12 * 32, out_features=64),
-#     nn.ReLU(),
-#     nn.Dropout(p=0.1),
-#     nn.Linear(in_features=64, out_features=1),
-#     nn.Sigmoid(),
-# )
+# def _init_weights(model):
+#     # about weight initialization
+#     # https://machinelearningmastery.com/weight-initialization-for-deep-learning-neural-networks/
+#     # https://www.pyimagesearch.com/2021/05/06/understanding-weight-initialization-for-neural-networks/
+#     for m in model.modules():
+#         # Initialize all convs
+#         if isinstance(m, nn.Conv2d):
+#             nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+#         if isinstance(m, nn.Linear):
+#             nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+#
+#
+# def model_fn():
+#     model = nn.Sequential(
+#         # A first convolution block
+#         nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3),
+#         nn.ReLU(),
+#         nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3),
+#         nn.ReLU(),
+#         nn.MaxPool2d(2),
+#         # Another stack of these
+#         nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3),
+#         nn.ReLU(),
+#         nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3),
+#         nn.ReLU(),
+#         nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3),
+#         nn.ReLU(),
+#         nn.MaxPool2d(2),
+#         # A final classifier
+#         nn.Flatten(),
+#         nn.Linear(in_features=12 * 12 * 32, out_features=64),
+#         nn.ReLU(),
+#         nn.Dropout(p=0.1),
+#         nn.Linear(in_features=64, out_features=1),
+#         nn.Sigmoid(),
+#     )
+#
+#     _init_weights(model)
+#
+#     return model
+#
+#
+# model = model_fn()
+#
+# print(model)
+#
+# x = torch.rand((16, 3, 64, 64))  # We define an input of dimensions batch_size, channels, height, width
+#
+# print(x.shape)
+#
+# y = model(x)
+#
+# print(y.shape)
+#
+# print(summarize(model,example_input_array=x))
 # ```
+#
+# And outputs this
+#
+# ```
+# Sequential(
+#   (0): Conv2d(3, 16, kernel_size=(3, 3), stride=(1, 1))
+#   (1): ReLU()
+#   (2): Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1))
+#   (3): ReLU()
+#   (4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+#   (5): Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1))
+#   (6): ReLU()
+#   (7): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1))
+#   (8): ReLU()
+#   (9): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1))
+#   (10): ReLU()
+#   (11): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+#   (12): Flatten(start_dim=1, end_dim=-1)
+#   (13): Linear(in_features=4608, out_features=64, bias=True)
+#   (14): ReLU()
+#   (15): Dropout(p=0.1, inplace=False)
+#   (16): Linear(in_features=64, out_features=1, bias=True)
+#   (17): Sigmoid()
+# )
+# torch.Size([16, 3, 64, 64])
+# torch.Size([16, 1])
+#    | Name | Type      | Params | In sizes         | Out sizes       
+# --------------------------------------------------------------------------
+# 0  | 0    | Conv2d    | 448    | [16, 3, 64, 64]  | [16, 16, 62, 62]
+# 1  | 1    | ReLU      | 0      | [16, 16, 62, 62] | [16, 16, 62, 62]
+# 2  | 2    | Conv2d    | 2.3 K  | [16, 16, 62, 62] | [16, 16, 60, 60]
+# 3  | 3    | ReLU      | 0      | [16, 16, 60, 60] | [16, 16, 60, 60]
+# 4  | 4    | MaxPool2d | 0      | [16, 16, 60, 60] | [16, 16, 30, 30]
+# 5  | 5    | Conv2d    | 4.6 K  | [16, 16, 30, 30] | [16, 32, 28, 28]
+# 6  | 6    | ReLU      | 0      | [16, 32, 28, 28] | [16, 32, 28, 28]
+# 7  | 7    | Conv2d    | 9.2 K  | [16, 32, 28, 28] | [16, 32, 26, 26]
+# 8  | 8    | ReLU      | 0      | [16, 32, 26, 26] | [16, 32, 26, 26]
+# 9  | 9    | Conv2d    | 9.2 K  | [16, 32, 26, 26] | [16, 32, 24, 24]
+# 10 | 10   | ReLU      | 0      | [16, 32, 24, 24] | [16, 32, 24, 24]
+# 11 | 11   | MaxPool2d | 0      | [16, 32, 24, 24] | [16, 32, 12, 12]
+# 12 | 12   | Flatten   | 0      | [16, 32, 12, 12] | [16, 4608]      
+# 13 | 13   | Linear    | 294 K  | [16, 4608]       | [16, 64]        
+# 14 | 14   | ReLU      | 0      | [16, 64]         | [16, 64]        
+# 15 | 15   | Dropout   | 0      | [16, 64]         | [16, 64]        
+# 16 | 16   | Linear    | 65     | [16, 64]         | [16, 1]         
+# 17 | 17   | Sigmoid   | 0      | [16, 1]          | [16, 1]         
+# --------------------------------------------------------------------------
+# 320 K     Trainable params
+# 0         Non-trainable params
+# 320 K     Total params
+# 1.284     Total estimated model params size (MB)
+# ```
+#
+# </details>
+#
 #
 # You should be able to understand this
 
@@ -585,13 +1168,17 @@ model = model_fn()
 
 print(model)
 
-x = torch.rand((16, 3, 64, 64))  # We define an input of dimensions batch_size, channels, height, width
+x = torch.rand(
+    (16, 3, 64, 64)
+)  # We define an input of dimensions batch_size, channels, height, width
 
 print(x.shape)
 
 y = model(x)
 
 print(y.shape)
+
+print(summarize(model, example_input_array=x))
 
 # %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "DAv9FrjAC1yl", "outputId": "6b42440f-8806-41e3-dc97-ecb499de36bd"}
 # moving model to gpu if available
@@ -606,13 +1193,20 @@ model = model.to(DEVICE)
 
 # %% {"id": "6w1BHLnoC1ym"}
 criterion = nn.BCELoss(reduction="mean")
-optimizer = optim.SGD(model.parameters(), lr=1e-2)
+optimizer = optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)
 
 
 # %% [markdown] {"id": "8d1qaMZ8C1ym"}
 # ## Training with pytorch
 #
 # We will actually train the model, and plot training & validation metrics during training
+#
+# Be careful, if you train several times the same model it will continue optimizing its parameters
+#
+# Its advised to define a new model if you are executing the training loop several times
+
+# %% [markdown]
+# ### Defining the Training loop
 
 # %% {"id": "xfP8tBSMC1yn"}
 def train_one_epoch(model, train_loader):
@@ -679,9 +1273,48 @@ def valid_one_epoch(model, valid_loader):
     return np.asarray(epoch_loss).mean()
 
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "6fwFxOOFGQkZ", "outputId": "a6da7c86-8233-4257-cf0f-86d6ff13ea88"}
-EPOCHS = 10  # Set number of epochs, example 100
+# %% [markdown]
+# ### Putting everything together to run a training
+#
+# Here we copy paste previous code so that you are sure you have setup everything correctly
 
+# %%
+model = model_fn()
+
+# moving model to gpu if available
+model = model.to(DEVICE)
+
+print(model)
+
+# We define an input of dimensions batch_size, channels, height, width
+x = torch.rand((16, 3, 64, 64))
+
+print(x.shape)
+
+y = model(x)
+
+print(y.shape)
+
+print(summarize(model, example_input_array=x))
+
+# %% [markdown]
+# **Hyperparameters**
+#
+# Here we define what we call hyperparameters, the "meta-parameters" of the training that you can modify to affect your training
+
+# %%
+EPOCHS = 10  # Set number of epochs, example 100
+LEARNING_RATE = 1e-2
+MOMENTUM = 0.9
+
+# %%
+criterion = nn.BCELoss(reduction="mean")
+optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM,weight_decay=1e-4)
+
+# %% [markdown]
+# Let's go !
+
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "6fwFxOOFGQkZ", "outputId": "a6da7c86-8233-4257-cf0f-86d6ff13ea88"}
 # Send model to GPU
 model = model.to(DEVICE)
 
@@ -710,14 +1343,101 @@ plt.legend(frameon=False)
 plt.show()
 
 # %% [markdown]
-# Save the model
+# ### Training analysis
+#
+# How would you analyze your training ?
+#
+# Is it underfitting ?
+#
+# Is it overfitting ?
+
+# %% [markdown]
+# ### Model saving
+#
+# There are several ways to save your model :
+# https://pytorch.org/tutorials/beginner/saving_loading_models.html
+#
+# - torch.save: Saves a serialized object to disk. This function uses Python’s pickle utility for serialization. Models, tensors, and dictionaries of all kinds of objects can be saved using this function.
+#
+# - torch.load: Uses pickle’s unpickling facilities to deserialize pickled object files to memory. This function also facilitates the device to load the data into (see Saving & Loading Model Across Devices).
+#
+# - torch.nn.Module.load_state_dict: Loads a model’s parameter dictionary using a deserialized state_dict. For more information on state_dict, see What is a state_dict?.
+#
+# - scripting / tracing the model: https://pytorch.org/docs/stable/jit.html
+#
+# The first 2 options require you to import the model definition as it uses pickle
+# The third option requires you to redefine an empty model with the same architecture and load the weights, because we are only saving the "state" (e.g. parameters, weights, biases)
+# The fourth option allow to make a "self-contained" model that can be used later, but comes with caveats
+
+# %% [markdown]
+# ### State dict saving 
+#
+# This is the recommended method because it allows to reuse the model with any code
 
 # %%
+# State dict saving
 with open("model.pt", "wb") as f:
     torch.save(model.state_dict(), f)
 
+# See below for how to reload the model
+
+# %% [markdown]
+# To reload such a model, you have to instantiate an empty model with the same architecture then load the state dict (the weights)
+# ```python
+# # Instantiate a new empty model
+# model = model_fn()
+#
+# print(model)
+#
+# # Load state
+# checkpoint_path = "model.pt"
+# model.load_state_dict(torch.load(checkpoint_path))
+#
+# print("Model Loaded")
+# ```
+#
+# This is very nice because you get a model that you can finetune, retrain, modify. However, this means that you have to "port" the model definition code to production. 
+
+# %% [markdown]
+# ### Model scripting
+#
+# But for production, in order to avoid shipping the model definition code, we like to have an "self-contained" binary that we can deliver to the production team (you will see such a case during our next class together for cloud computing)
+#
+# Here we try to "script" the model, meaning that we compile the graph to a static version of itself
+#
+# https://pytorch.org/docs/stable/jit.html
+
+# %%
+import torch.jit
+
+# Put the model in eval mode
+model = model.cpu().eval()
+
+# Script the model
+scripted_model = torch.jit.script(model)
+
+# Save
+scripted_model.save("scripted_model.pt")
+
+print(scripted_model)
+
+# Scripted model reloading (demo)
+scripted_model = torch.jit.load("scripted_model.pt", map_location=DEVICE)
+
+# %% [markdown]
+# ### Download the scripted model
+#
+# We are going to download the scripted model to be able to re-use it elsewhere (in another notebook for example), without having to rewrite the model definition function
+#
+# Uncomment this on google colab to download the model
+
+# %%
+# from google.colab import files
+
+# files.download('scripted_model.pt')
+
 # %% [markdown] {"id": "VqMkcDroC1yp"}
-# Now, clear the model from memory
+# We have finished what we need to do with the model, let's delete it !
 
 # %% {"id": "btrb85LmC1yp"}
 del model
@@ -731,6 +1451,8 @@ del model
 
 # %% [markdown] {"id": "g0TldNDQC1yq"}
 # ### Loading saved model
+#
+# State dict method
 
 # %% {"id": "Q-kCmgWEC1yr"}
 # Instantiate a new empty model
@@ -751,7 +1473,10 @@ print("Model Loaded")
 
 # %% {"id": "LjlrKEEOC1yr"}
 test_ds = NpArrayDataset(
-    images=test_images, labels=test_labels, image_transforms=image_transforms, label_transforms=target_transforms
+    images=test_images,
+    labels=test_labels,
+    image_transforms=image_transforms,
+    label_transforms=target_transforms,
 )
 
 # %% {"id": "Jf3oIRA4C1yr"}
@@ -800,7 +1525,9 @@ from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 print("Confusion matrix")
 cm = confusion_matrix(y_true, y_pred_classes)
 
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["background", "aircraft"])
+disp = ConfusionMatrixDisplay(
+    confusion_matrix=cm, display_labels=["background", "aircraft"]
+)
 
 disp.plot()
 plt.show()
@@ -830,7 +1557,9 @@ roc_auc = auc(fpr, tpr)
 # %% {"id": "KGD6ukiMC1yu"}
 plt.figure()
 lw = 2
-plt.plot(fpr, tpr, color="darkorange", lw=lw, label="ROC curve (area = %0.2f)" % roc_auc)
+plt.plot(
+    fpr, tpr, color="darkorange", lw=lw, label="ROC curve (area = %0.2f)" % roc_auc
+)
 plt.plot([0, 1], [0, 1], color="navy", lw=lw, linestyle="--")
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
@@ -888,7 +1617,9 @@ y_pred_classes = y_pred_probas > selected_threshold
 
 cm = confusion_matrix(y_true, y_pred_classes)
 
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["background", "aircraft"])
+disp = ConfusionMatrixDisplay(
+    confusion_matrix=cm, display_labels=["background", "aircraft"]
+)
 
 disp.plot()
 plt.show()
@@ -964,21 +1695,6 @@ plt.show()
 #
 # ```                                             
 
-# %% [markdown]
-# ### Best checkpoint
-#
-# You've seen how to save model checkpoint. However we saved the model at the end of training. What if there is an issue (like overfitting ? or our computer crashes !!!) ? 
-#
-# How to keep a good copy of our model at any point ? 
-#
-# The idea is that during the training, we always save the checkpoint with the lowest valid loss.
-#
-# **Modify the train loop to keep the best model state dict at any point**
-#
-
-# %%
-# Here
-
 # %% [markdown] {"id": "84qzXDMGC1yw"}
 # ### Early stopping
 #
@@ -987,7 +1703,6 @@ plt.show()
 # **Go back to your previous class and adapt the training loop to add early stopping**
 
 # %% {"id": "NW7rLbdGC1yx"}
-# Here
 
 # %% [markdown] {"id": "4XRzekUGC1yy"}
 # ### Data Augmentation
@@ -1032,7 +1747,10 @@ train_transform = torchvision.transforms.Compose(
 
 # %% {"id": "5yPlhQbzC1yy"}
 trainset_augmented = NpArrayDataset(
-    images=train_images, labels=train_labels, image_transforms=train_transform, label_transforms=None
+    images=train_images,
+    labels=train_labels,
+    image_transforms=train_transform,
+    label_transforms=None,
 )
 
 # %% {"id": "MeKVDcHrC1yz"}
@@ -1052,17 +1770,56 @@ plt.show()
 # %% {"id": "ej7Jb0SNC1yz"}
 # do another training and plot our metrics again. Did we change something ?
 
-# %% [markdown]
-# ### [Optional] ReduceLR On Plateau
+# %% [markdown] {"tags": []}
+# ### Best checkpoint
 #
-# Sometimes it's best to reduce the learning rate if you stop improving
+# You've seen how to save model checkpoint. However we saved the model at the end of training. What if there is an issue (like overfitting ? or our computer crashes !!!) ? 
 #
-# Tutorial : https://www.deeplearningwizard.com/deep_learning/boosting_models_pytorch/lr_scheduling/#reduce-on-loss-plateau-decay
+# How to keep a good copy of our model at any point ? 
+#
+# The idea is that during the training, we always save the checkpoint with the lowest valid loss, then reload it at the end of training
+#
+# **Modify the train loop to keep the best model state dict at any point, then reload it at the end of training**
+#
 
 # %%
 
+# %% [markdown] {"toc-hr-collapsed": true}
+# ### Food for thoughts: Tooling
+#
+# To conclude this notebook, reflect on the following,
+#
+# You have launched different experiences and obtained different results,
+#
+# Did you feel the notebook you used was sufficient ? Which tools would you like to have in order to properly run your experiments ? (Quick google search or ask someone) Do they already exist ?
+#
+# ### **Presentation : High level frameworks**
+#
+# <img src="https://raw.githubusercontent.com/pytorch/ignite/master/assets/logo/ignite_logo_mixed.svg" alt="ignite" style="width: 400px;"/>
+#
+# Pytorch ignite is what we call a "high-level library" over pytorch, its objectives is to abstract away most of the boilerplate code for training deep neural network.
+#
+# Usually, they make the development process easier by enabling you to focus on what's important instead of writing distributed and optimized training loops and plugging metrics / callbacks. Because we all forgot to call `.backward()` or `.zero_grad()` at least once.
+#
+# Here an overview of the high-level libraries available for pytorch,
+#
+# https://neptune.ai/blog/model-training-libraries-pytorch-ecosystem?utm_source=twitter&utm_medium=tweet&utm_campaign=blog-model-training-libraries-pytorch-ecosystem
+#
+# Of these, we would like to highlight three of them:
+#
+# - pytorch-ignite, officially sanctioned by the pytorch team (its repo lives at https://pytorch.org/ignite/), which is developped by [someone from Toulouse](https://twitter.com/vfdev_5) - yes there is a member of the pytorch team living in Toulouse, we are not THAT behind in ML/DL :wishful-thinking:
+#
+# - pytorch-lightning (https://www.pytorchlightning.ai/) which has recently seen its 1.0 milestone and has been developped to a company. It is more "research oriented" that pytorch-ignite, and with a lower abstraction level, but seems to enable more use case.
+#
+# - catalyst (https://github.com/catalyst-team/catalyst) 
+#
+# - skorch (https://github.com/skorch-dev/skorch). This class was previously written in skorch. Skorch mimics the scikit-learn API and allows bridging the two libraries together. It's a bit less powerful but you write much less code than the two libraries above, and if you are very familiar with scikit-learn, it could be very useful for fast prototyping
+#
+#
+# **Take a look at the [previous class](https://nbviewer.jupyter.org/github/SupaeroDataScience/deep-learning/blob/main/deep/PyTorch%20Ignite.ipynb), the [official examples](https://nbviewer.jupyter.org/github/pytorch/ignite/tree/master/examples/notebooks/) or the [documentation](https://pytorch.org/ignite/) if want to learn about Ignite**
+
 # %% [markdown]
-# ## [Optional] Hyperparameter Tuning
+# ## **Optional** exercises to run at home
 #
 # If you're done with this, you can explore a little bit more : Now that we have a nice training loop we can do hyperparameter tuning !
 #
@@ -1073,6 +1830,18 @@ plt.show()
 # - the model architecture
 #  
 # etc... !
+#
+#
+# - Try to play with network hyperparameters. The dataset is small and allow fast iterations so use it to have an idea on hyperparameter sensitivity.
+#     number of convolutions, other network structures, learning rates, optimizers,...
+#
+# - Example: Compare again SGD and ADAM
+#
+# - Try to use the ROC curve to select a threshold to filter only negative examples without losing any positive examples
+#
+# When you are done with the warmup, go to the next notebook. But remember that next datasets will be larger and you will not have the time (trainings will take longer ) to experiment on hyperparameters.
+#
+# **You can try more things**
 
 # %% [markdown]
 # ### Optimizer Changes
@@ -1089,6 +1858,8 @@ plt.show()
 # http://d2l.ai/chapter_convolutional-modern/batch-norm.html
 #
 # Try adding it to your network and see what happens !
+#
+# <details>
 #
 # ```python
 # def model_fn():
@@ -1124,6 +1895,8 @@ plt.show()
 #
 #     return model
 # ```
+#     
+# </details>
 
 # %% [markdown] {"id": "xUlVYFuPC1yz"}
 # ### Trying other models
@@ -1131,7 +1904,9 @@ plt.show()
 # You have seen a class on different model structure,
 # https://supaerodatascience.github.io/deep-learning/slides/2_architectures.html#/
 #
-# Now is the time to try and implement them. For example, try to write a VGG-11 with fewer filters by yourself... or a very small resnet using [this](https://github.com/a-martyn/resnet/blob/master/resnet.py) as inspiration
+# Now is the time to try and implement them. 
+#
+# For example, try to write a VGG-11 with fewer filters by yourself... or a very small resnet using [this](https://github.com/a-martyn/resnet/blob/master/resnet.py) as inspiration
 #
 # You can also use models from [torchvision](https://pytorch.org/docs/stable/torchvision/models.html#classification) in your loop, or as inspiration
 #
@@ -1141,6 +1916,20 @@ plt.show()
 
 # %%
 # HERE
+
+# %% [markdown] {"tags": []}
+# ### LR Scheduling
+#
+# Sometimes it's best to reduce the learning rate if you stop improving, or to reduce learning rate at the end of training
+#
+# Tutorial : https://www.deeplearningwizard.com/deep_learning/boosting_models_pytorch/lr_scheduling/#top-basic-learning-rate-schedules
+#
+# - **Modify the train loop to change the learning rate when the validation loss is stagnating**
+#
+# - **Modify the train loop to change the learning rate when the validation loss is stagnating**
+
+# %%
+# ...
 
 # %% [markdown]
 # ### Transfer Learning
@@ -1160,54 +1949,3 @@ plt.show()
 # https://github.com/rwightman/pytorch-image-models
 
 # %%
-
-# %% [markdown] {"id": "kGeb1jfrC1y0"}
-# ## [Optional] Next steps before the next notebooks
-#
-# - Try to play with network hyperparameters. The dataset is small and allow fast iterations so use it to have an idea on hyperparameter sensitivity.
-#     number of convolutions, other network structures, learning rates, optimizers,...
-#
-# - Example: Compare again SGD and ADAM
-#
-# - Try to use the ROC curve to select a threshold to filter only negative examples without losing any positive examples
-#
-# When you are done with the warmup, go to the next notebook. But remember that next datasets will be larger and you will not have the time (trainings will take longer ) to experiment on hyperparameters.
-#
-# **Try more things before going to the next notebook**
-
-# %% {"id": "PE1sArquC1y0"}
-
-# %% [markdown] {"id": "HO3KmuKCC1y0"}
-# ## [Optional] Food for thoughts: Tooling
-#
-# To conclude this notebook, reflect on the following,
-#
-# You have launched different experiences and obtained different results,
-#
-# Did you feel the notebook you used was sufficient ? Which tools would you like to have in order to properly run your experiments ? (Quick google search or ask someone) Do they already exist ?
-
-# %% [markdown] {"id": "SMpLWDs-C1y0"}
-# ### High level frameworks
-#
-# <img src="https://raw.githubusercontent.com/pytorch/ignite/master/assets/logo/ignite_logo_mixed.svg" alt="ignite" style="width: 400px;"/>
-#
-# Pytorch ignite is what we call a "high-level library" over pytorch, its objectives is to abstract away most of the boilerplate code for training deep neural network.
-#
-# Usually, they make the development process easier by enabling you to focus on what's important instead of writing distributed and optimized training loops and plugging metrics / callbacks. Because we all forgot to call `.backward()` or `.zero_grad()` at least once.
-#
-# Here an overview of the high-level libraries available for pytorch,
-#
-# https://neptune.ai/blog/model-training-libraries-pytorch-ecosystem?utm_source=twitter&utm_medium=tweet&utm_campaign=blog-model-training-libraries-pytorch-ecosystem
-#
-# Of these, we would like to highlight three of them:
-#
-# - pytorch-ignite, officially sanctioned by the pytorch team (its repo lives at https://pytorch.org/ignite/), which is developped by [someone from Toulouse](https://twitter.com/vfdev_5) - yes there is a member of the pytorch team living in Toulouse, we are not THAT behind in ML/DL :wishful-thinking:
-#
-# - pytorch-lightning (https://www.pytorchlightning.ai/) which has recently seen its 1.0 milestone and has been developped to a company. It is more "research oriented" that pytorch-ignite, and with a lower abstraction level, but seems to enable more use case.
-#
-# - catalyst (https://github.com/catalyst-team/catalyst) 
-#
-# - skorch (https://github.com/skorch-dev/skorch). This class was previously written in skorch. Skorch mimics the scikit-learn API and allows bridging the two libraries together. It's a bit less powerful but you write much less code than the two libraries above, and if you are very familiar with scikit-learn, it could be very useful for fast prototyping
-#
-#
-# **Take a look at the [previous class](https://nbviewer.jupyter.org/github/SupaeroDataScience/deep-learning/blob/main/deep/PyTorch%20Ignite.ipynb), the [official examples](https://nbviewer.jupyter.org/github/pytorch/ignite/tree/master/examples/notebooks/) or the [documentation](https://pytorch.org/ignite/) if want to learn about Ignite**

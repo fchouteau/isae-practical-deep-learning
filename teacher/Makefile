@@ -21,6 +21,7 @@ build-student-notebooks:
 	jupytext --to notebook 1_hands_on.py --output ../1_hands_on.ipynb
 	jupytext --to notebook 2_dealing_with_class_imbalance.py --output ../2_dealing_with_class_imbalance.ipynb
 	jupytext --to notebook 3_sliding_window.py --output ../3_sliding_window.ipynb
+#	jupytext --to notebook 4_classification_to_dense.py --output ../4_classification_to_dense.ipynb
 
 	jupyter nbconvert --to notebook \
 	    --TagRemovePreprocessor.enabled=True \
@@ -46,10 +47,17 @@ build-student-notebooks:
 	    --inplace \
         ../3_sliding_window.ipynb
 
-copy-to-main-repo:
+#	jupyter nbconvert --to notebook \
+#	    --TagRemovePreprocessor.enabled=True \
+#	    --TagRemovePreprocessor.remove_cell_tags=solution \
+#	    --inplace \
+#        ../4_classification_to_dense.ipynb
+
+copy-to-isae-repo:
 	cp ../README.md /home/fchouteau/classes/deep-learning/vision/
 	cp ../licence.md /home/fchouteau/classes/deep-learning/vision/
 	cp ../0_cnns.ipynb /home/fchouteau/classes/deep-learning/vision/
 	cp ../1_hands_on.ipynb /home/fchouteau/classes/deep-learning/vision/
 	cp ../2_dealing_with_class_imbalance.ipynb /home/fchouteau/classes/deep-learning/vision/
 	cp ../3_sliding_window.ipynb /home/fchouteau/classes/deep-learning/vision/
+#	cp ../4_classification_to_dense.ipynb /home/fchouteau/classes/deep-learning/vision/
