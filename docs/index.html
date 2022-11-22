@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="./static/css/reset.css" />
     <link rel="stylesheet" href="./static/css/evo.css" />
     <!-- <link rel="stylesheet" href="/_assets/evo" id="theme" /> -->
-    <link rel="stylesheet" href="./css/highlight/zenburn.css" />
+    <link rel="stylesheet" href="./css/highlight/vs.css" />
 
 
 </head>
@@ -24,13 +24,13 @@
 
 **ISAE-SUPAERO, SDD, Nov/Dev 2021**
 
-Florient CHOUTEAU
+Florient CHOUTEAU, Quentin LETURGIE
 
 </script></section><section data-markdown><script type="text/template">
 
 Slides : https://fchouteau.github.io/isae-practical-deep-learning/
 
-Notebooks : https://github.com/fchouteau/isae-practical-deep-learning
+Notebooks : https://github.com/SupaeroDataScience/deep-learning/tree/main/vision
 
 </script></section></section><section ><section data-markdown><script type="text/template">
 
@@ -47,7 +47,7 @@ Notebooks : https://github.com/fchouteau/isae-practical-deep-learning
 </script></section><section data-markdown><script type="text/template">
 <!-- .slide: data-background="http://i.giphy.com/90F8aUepslB84.gif" -->
 
-### Lesson #1 <!-- .element: style="color: white; font-family: serif; font-size: 1.2em;" -->
+### RevealJS <!-- .element: style="color: white; font-family: serif; font-size: 1.2em;" -->
 
 These slides are built using <!-- .element: style="color: white; font-family: cursive; font-size: 1.2em;" --> [reveal.js](https://revealjs.com) and [reveal-md](
 https://github.com/webpro/reveal-md)
@@ -74,8 +74,7 @@ This is awesome ! 😲 <!-- .element: style="color: white; font-family: cursive;
 ### Who ?
 
 You'll see me a bit this year :
-- CNN for Computer Vision (this BE)
-- January Hackathon (CNN for Computer Vision)
+- CNN for Computer Vision
 - Outils du Big Data : Cloud, Docker, Deployment
 
 </script></section><section data-markdown><script type="text/template">
@@ -86,7 +85,7 @@ You'll see me a bit this year :
 
 </script></section><section data-markdown><script type="text/template">
 
-### Context: Machine Learning on Satellite Imagery
+### Context: DL on Satellite Imagery
 
 A lot of use cases :
 
@@ -94,18 +93,18 @@ A lot of use cases :
 - Urban Cartography (building, roads, damage assessment...)
 - Various objects detections (ships, vehicles...)
 
-![shipdet](https://www.aerospace-valley.com/sites/default/files/styles/news_main/public/thumbnails/image/airbus_ship_detection_challenge.png?itok=i7DpZPus)
+![shipdet](static/img/airbus_ship_det.png) <!-- .element:  width="60%" height="60%"-->
 
 </script></section><section data-markdown><script type="text/template">
 
-### Context: Machine Learning on Satellite Imagery
+### Context: DL on Satellite Imagery
 
 Can also be used for "image processing" : 
 
 - Denoising
-- "Super Resolution" ("enhance")
+- Super Resolution
 
-![](https://maxar-blog-assets.s3.amazonaws.com/uploads/blogImages/HD_Cars.jpg) <!-- .element:  width="20%" height="20%"-->
+![](static/img/pneohd.gif) <!-- .element:  width="20%" height="20%"-->
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -117,11 +116,11 @@ Can also be used for "image processing" :
 
 ### What you did last time 
 
-- Trained a Convolutional Neural Network on Fashion MNIST
+- Trained an ANN & a Convolutional Neural Network on Fashion MNIST
 - Wrote your first training loops with Pytorch
-- Discovered "callbacks" (early stopping), optimizers (sgd, adam), dropout
-- Saw your firsts neural architectures (alexnet, vggs, resnets)
-- (Maybe discovered pytorch ignite)
+- Maybe discovered "callbacks" (early stopping), optimizers (sgd, adam), dropout
+- Maybe saw your firsts neural architectures (alexnet, vggs, resnets)
+- Maybe discovered pytorch ignite
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -133,7 +132,17 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 - using pytorch <!-- .element: class="fragment" data-fragment-index="2" -->
 - using google colaboratory and its GPUs <!-- .element: class="fragment" data-fragment-index="3" -->
 
-![colab](https://miro.medium.com/max/776/1*Lad06lrjlU9UZgSTHUoyfA.png) <!-- .element:  class="fragment" data-fragment-index="4" width="25%" height="25%"-->
+![colab](static/img/colab.png) <!-- .element:  class="fragment" data-fragment-index="4" width="25%" height="25%"-->
+
+</script></section><section data-markdown><script type="text/template">
+
+This is a "hands-on", not a full class
+
+**More resources on DL for Computer Vision**
+
+- [http://cs231n.stanford.edu](http://cs231n.stanford.edu/)
+- [https://d2l.ai/index.html](https://d2l.ai/index.html)
+
 
 </script></section></section><section ><section data-markdown><script type="text/template">
 
@@ -165,19 +174,19 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 - 2600 train images (1300 aircrafts, 1300 background), size 64x64
 - 880 test images (440 aircrafts, 440 background), size 64x64
 
-![](static/img/toy_dataset.png) <!-- .element height="40%" width="40%" -->
+![toy_dataset](static/img/toy_dataset.png) <!-- .element height="40%" width="40%" -->
 
 </script></section><section data-markdown><script type="text/template"> 
 
 ### Pytorch reminder
 
-![](https://pbs.twimg.com/media/E_1d06cVIAcYheX?format=jpg&name=large)  <!-- .element height="50%" width="50%" -->
+![pt](static/img/pytorch_1.jpeg)  <!-- .element height="50%" width="50%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
 ### Pytorch reminder
 
-![](https://pbs.twimg.com/media/E_1d06XVcA8Dhzs?format=jpg&name=large)  <!-- .element height="50%" width="50%" -->
+![pt](static/img/pytorch_2.jpeg)  <!-- .element height="50%" width="50%" -->
 
 
 </script></section><section data-markdown><script type="text/template">
@@ -204,7 +213,7 @@ Train an aircraft detector on a dataset of aircrafts and "not aircrafts"
 
 You'll see that... in February
 
-[Tutorial](https://colab.research.google.com/github/d2l-ai/d2l-en-colab/blob/master/chapter_deep-learning-computation/use-gpu.ipynb)
+[Tutorial](http://d2l.ai/chapter_appendix-tools-for-deep-learning/colab.html)
 
 </script></section></section><section ><section data-markdown><script type="text/template">
 
@@ -215,39 +224,39 @@ You'll see that... in February
 
 ### Kernel filtering
 
-![](https://miro.medium.com/max/1400/1*Fw-ehcNBR9byHtho-Rxbtw.gif) <!-- .element height="30%" width="30%" -->
-
-
-</script></section><section data-markdown><script type="text/template">
-
-### ConvNets intuition come from image processing
-
-![](https://imgs.developpaper.com/imgs/3480721674-5ae839c26eef6_articlex.jpg) <!-- .element height="30%" width="30%" -->
-
+![kernel_filtering](static/img/kernel_filtering.gif) <!-- .element height="30%" width="30%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
-### ConvNets intuition come from image processing
+### ConvNets intuition comes from image processing
 
-![](https://ai.stanford.edu/~syyeung/cvweb/Pictures1/sharpening2.png) <!-- .element height="60%" width="60%" -->
+![convolution_filtering](static/img/convolution_filtering.png) <!-- .element height="60%" width="60%" -->
 
 (I apologize for using Lena as an example)
 
 </script></section><section data-markdown><script type="text/template">
 
-ConvNets works because we assume inputs are images
+### ConvNets intuition comes from image processing
+
+![convolution](static/img/convolution.gif) <!-- .element height="60%" width="40%" -->
+
+</script></section><section data-markdown><script type="text/template">
+
+**ConvNets works because we assume inputs are images**
+
+![permuted](static/img/permuted.png) <!-- .element height="60%" width="60%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
 ### ConvNets
 
-![feature](https://www.mdpi.com/sensors/sensors-19-04933/article_deploy/html/images/sensors-19-04933-g001.png)  <!-- .element height="60%" width="60%" -->
+![feature_extraction](static/img/feature_extraction.png)  <!-- .element height="60%" width="60%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
 ### Convolutions ?
 
-![cnns](https://i.stack.imgur.com/FjvuN.gif)  <!-- .element height="40%" width="40%" -->
+![cnns](static/img/convolution_slinding.gif)  <!-- .element height="40%" width="40%" -->
 
 [useful link](https://github.com/vdumoulin/conv_arithmetic)
 
@@ -255,13 +264,13 @@ ConvNets works because we assume inputs are images
 
 ### Pooling ?
 
-![](https://developers.google.com/machine-learning/practica/image-classification/images/maxpool_animation.gif) <!-- .element height="40%" width="40%" -->
+![mp](static/img/maxpool_animation.gif) <!-- .element height="40%" width="40%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
 ### nn.Linear ?
 
-![](static/img/nnlinear.png) <!-- .element height="40%" width="40%" -->
+![nn](static/img/nnlinear.png) <!-- .element height="40%" width="40%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -436,7 +445,7 @@ ResNet(
 
 ### Objectives
 
-- Continue manipulating CNNs using pytorch / ignite
+- Continue manipulating CNNs using pytorch
 - Tackle a more realistic dataset
 - Examine what must changes to diagnose your model and improve it
 
@@ -502,7 +511,7 @@ Usually the most important things in imbalanced classification
 
 ### PR synthetic metric
 
-![fbeta](https://i.stack.imgur.com/swW0x.png) <!-- .element height="35%" width="35%" -->
+![fbeta](static/img/fbeta.png) <!-- .element height="35%" width="35%" -->
 
 - beta = 1 => Recall & Precision weighted equally
 - beta > 1 => Emphasizes recall (not missing positive examples)
@@ -561,7 +570,7 @@ Readings:
 
 ### high-level frameworks over pytorch
 
-![lightning](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element height="40%" width="40%" -->
+![lightning](static/img/lightning.jpeg) <!-- .element height="40%" width="40%" -->
 
 </script></section><section data-markdown><script type="text/template">
 
@@ -579,8 +588,7 @@ Readings:
 - All of them have their pros and cons
 - [There is a huge ecosystem based around pytorch](https://pytorch.org/ecosystem/)
 
-![](https://miro.medium.com/max/5616/1*5H6pJX8pejhywN72WsDogQ.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
-
+![](static/img/lightning.jpeg) <!-- .element: style="width: 25%; height: 25%"--> 
 </script></section></section></div>
     </div>
     <!-- <div id="footer-container" style="display:none;"> -->
