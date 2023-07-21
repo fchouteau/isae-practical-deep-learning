@@ -7,11 +7,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.7.1
+#       jupytext_version: 1.14.7
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: py38-vitis35-torch113-cpu-quantizer
 #     language: python
-#     name: python3
+#     name: py38-vitis35-torch113-cpu-quantizer
 # ---
 
 # %%
@@ -21,24 +21,26 @@
 # %%
 # %matplotlib widget
 
+# %%
+# add khumeia
+import sys
+
+sys.path.append("./src/")
+sys.path = list(set(sys.path))
+
 # %% [markdown]
 # ## Génération des tuiles d'évaluation
 #
 # On génère des tuiles 512 x 512 pour le dernier notebook
 
 # %%
-import sys
 from pathlib import Path
 
 import numpy as np
 from pathy import Pathy
+from PIL import Image
 
 from khumeia import helpers
-
-# %%
-# add khumeia
-sys.path.append("./src/")
-sys.path = list(set(sys.path))
 
 # %%
 # setup env variable
@@ -64,7 +66,9 @@ TILE_SIZE = 512
 TILE_STRIDE = 512
 
 # %%
-eval_dataset.items = eval_dataset.items[: min(len(eval_dataset), MAX_ITEMS or len(eval_dataset))]
+eval_dataset.items = eval_dataset.items[
+    : min(len(eval_dataset), MAX_ITEMS or len(eval_dataset))
+]
 
 # %%
 sliding_window = SlidingWindow(
@@ -84,26 +88,35 @@ eval_large_tiles = helpers.dataset_generation.generate_candidate_tiles_from_item
 
 # %%
 test_stratified_sampler = BackgroundToPositiveRatioPerItemSampler(
-    nb_positive_tiles_max=24,
+    nb_positive_tiles_max=32,
     background_to_positive_ratio=0.5,
     with_replacement=False,
     shuffle=True,
 )
 
-eval_large_tiles = helpers.dataset_generation.sample_tiles_from_candidates(
+sampled_eval_large_tiles = helpers.dataset_generation.sample_tiles_from_candidates(
     eval_large_tiles, tiles_samplers=[test_stratified_sampler]
 )
 
 # %%
-eval_large_tiles = helpers.dataset_generation.dump_dataset_tiles(
-    tiles_dataset=eval_large_tiles, items_dataset=eval_dataset
+Image.fromarray(
+    helpers.visualisation.draw_tile(
+        sampled_eval_large_tiles[0].get_item(eval_dataset), sampled_eval_large_tiles[1]
+    )
 )
 
 # %%
-eval_large_tiles = np.asarray([i[0] for i in eval_large_tiles.items])
+dumped_eval_large_tiles = helpers.dataset_generation.dump_dataset_tiles(
+    tiles_dataset=sampled_eval_large_tiles,
+    items_dataset=eval_dataset,
+    with_objects=True,
+)
 
 # %%
-print(eval_large_tiles.shape)
+eval_large_images = np.asarray([i[0] for i in dumped_eval_large_tiles.items])
+eval_large_labels = dict(
+    (f"labels_{k}", item[1]) for k, item in enumerate(dumped_eval_large_tiles.items)
+)
 
 # %%
 # Save as dict of nparrays
@@ -111,14 +124,16 @@ data_dir = Path("./data/").resolve()
 dataset_path = data_dir / "tiles_aircraft_dataset.npz"
 
 with open(dataset_path, "wb") as f:
-    np.savez_compressed(f, eval_tiles=eval_large_tiles)
+    np.savez_compressed(f, eval_tiles=eval_large_images, **eval_large_labels)
 
 # %%
 # upload to gcp
 import shlex
 import subprocess
 
-cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(dataset_path.resolve())
+cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(
+    dataset_path.resolve()
+)
 print(cmd)
 subprocess.check_call(cmd, shell=True)
 # %% [markdown]
@@ -133,8 +148,15 @@ f = ds.open(
 )
 toy_dataset = np.load(f)
 eval_tiles = toy_dataset["eval_tiles"]
-
 print(eval_tiles.shape)
+# %%
+eval_labels = dict()
+
+for key in toy_dataset.keys():
+    if "labels_" in key:
+        idx = int(key.split("_")[-1])
+        eval_labels[idx] = toy_dataset[key]
+
 # %%
 # plot them
 import cv2
@@ -142,12 +164,14 @@ from matplotlib import pyplot as plt
 
 # %%
 grid_size = 4
-im_size = 512
+im_size = eval_tiles.shape[1]
 grid = np.zeros((grid_size * im_size, grid_size * im_size, 3)).astype(np.uint8)
 for i in range(grid_size):
     for j in range(grid_size):
         tile = eval_tiles[i * grid_size + j]
-        tile = cv2.rectangle(tile, (0, 0), (im_size, im_size), (255, 255, 255), thickness=2)
+        tile = cv2.rectangle(
+            tile, (0, 0), (im_size, im_size), (255, 255, 255), thickness=2
+        )
         grid[i * im_size : (i + 1) * im_size, j * im_size : (j + 1) * im_size, :] = tile
 
 # %%
@@ -165,8 +189,12 @@ import itertools
 from PIL import Image
 
 # %%
-t = eval_tiles[12]
-planes_xy = [(380, 480), (455, 420)]
+t = eval_tiles[3]
+l = eval_labels[3]
+
+# %%
+planes_xy = np.asarray([(x + w // 2, y + h // 2) for x, y, w, h in l])
+planes_xy
 
 # %%
 plt.figure(figsize=(4, 4))
@@ -175,8 +203,8 @@ plt.show()
 
 # %%
 im_h, im_w = t.shape[:2]
-tile_h, tile_w = 64, 64
-stride_h, stride_w = 32, 32
+tile_h, tile_w = 96, 96
+stride_h, stride_w = tile_h // 2, tile_w // 2
 max_i = int(np.floor(float(im_h - tile_h) / stride_h)) + 1
 max_j = int(np.floor(float(im_w - tile_w) / stride_w)) + 1
 
@@ -191,22 +219,31 @@ for yt, xt in itertools.product(range(max_i), range(max_j)):
     yt2 = yt1 + tile_h
     aircraft = False
     for x, y in planes_xy:
-        if xt1 + 8 < x < xt2 - 8 and yt1 + 8 < y < yt2 - 8:
+        if (
+            xt1 + tile_w // 4 < x < xt2 - tile_w // 4
+            and yt1 + tile_h // 4 < y < yt2 - tile_h // 4
+        ):
             aircraft = True
             aircrafts_rect.append(((xt1, yt1), (xt2, yt2)))
     color = (255, 0, 0) if not aircraft else (0, 255, 0)
     frame = cv2.rectangle(frame, (xt1, yt1), (xt2, yt2), color, thickness=2)
     for tl, br in aircrafts_rect:
         frame = cv2.rectangle(frame, tl, br, (0, 255, 0), thickness=2)
-    if xt1 >= 256 and yt1 >= 256:
-        frame = frame[256:, 256:, :]
-        frame = Image.fromarray(frame)
-        gif.append(frame)
+    # if xt1 >= 256 and yt1 >= 256:
+    # frame = frame[256:, 256:, :]
+    frame = Image.fromarray(frame)
+    gif.append(frame)
 
 # %%
-gif[0].save("docs/static/sliding_window.gif", save_all=True, append_images=gif[1:], duration=100, loop=0)
+gif[0].save(
+    "docs/static/sliding_window.gif",
+    save_all=True,
+    append_images=gif[1:],
+    duration=100,
+    loop=0,
+)
 
 # %% [markdown]
 # Sliding window demo 
 #
-# ![sw](out.gif)
+# ![sw](docs/static/sliding_window.gif)

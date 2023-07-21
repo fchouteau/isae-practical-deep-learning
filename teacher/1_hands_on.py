@@ -1286,6 +1286,8 @@ model = model.to(DEVICE)
 
 print(model)
 
+x = x.to(DEVICE)
+
 # We define an input of dimensions batch_size, channels, height, width
 x = torch.rand((16, 3, 64, 64))
 

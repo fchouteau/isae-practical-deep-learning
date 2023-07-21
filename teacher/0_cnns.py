@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.14.7
 #   kernelspec:
 #     display_name: py39-isae
 #     language: python
@@ -113,7 +113,7 @@ plt.show()
 #
 # First, remember that you [learnt about convolutions a long time ago 😱](https://fr.wikipedia.org/wiki/Produit_de_convolution)
 #
-# <img src="https://betterexplained.com/ColorizedMath/content/img/Convolution.png" alt="drawing" width="400"/>
+# <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Convolution_of_spiky_function_with_box2.gif" alt="drawing" width="400"/>
 #
 # So basically, we slide a filter over the signal. In 2D, this means
 #
@@ -178,7 +178,7 @@ k = np.asarray(k)
 k.shape
 print(k)
 
-# %% tags=[]
+# %%
 img = skimage.data.cat()
 img = img[:, :, 0]
 
@@ -268,7 +268,7 @@ img.shape
 img = img.transpose((2, 0, 1))  # change channel order
 img.shape
 
-# %% tags=[]
+# %%
 w = np.random.random((1, 3, 3, 3))
 b = np.random.random((3,))
 
@@ -317,7 +317,7 @@ def forward_convolution(conv_W, conv_b, data):
 
     return output
 
-# %% tags=[]
+# %%
 # Convolve the input with the weights and bias
 
 
