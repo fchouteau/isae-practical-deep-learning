@@ -23,15 +23,15 @@ class Dataset:
         if n_jobs > 1 and joblib is not None:
             items = joblib.Parallel(n_jobs=n_jobs)(joblib.delayed(func)(item) for item in tqdm(self.items, desc=desc))
         else:
-            items = map(func, tqdm(self.items, desc=desc))
+            items = list(map(func, tqdm(self.items, desc=desc)))
         return Dataset(items=list(items))
 
     def flatmap(self, func: Callable, desc: Optional[str] = None, n_jobs=1) -> "Dataset":
         if n_jobs > 1 and joblib is not None:
             items = joblib.Parallel(n_jobs=n_jobs)(joblib.delayed(func)(item) for item in tqdm(self.items, desc=desc))
         else:
-            items = map(func, tqdm(self.items, desc=desc))
-        items = itertools.chain.from_iterable(items)
+            items = list(map(func, tqdm(self.items, desc=desc)))
+        items = list(itertools.chain.from_iterable(items))
         return Dataset(items=list(items))
 
     def filter(self, func: Callable[[Any], bool], desc=None) -> "Dataset":

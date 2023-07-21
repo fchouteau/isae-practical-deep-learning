@@ -2,6 +2,7 @@ import itertools
 from typing import Callable, Optional
 
 import numpy as np
+
 from khumeia.roi.bounding_box import BoundingBox
 from khumeia.roi.groundtruth import Groundtruth
 from khumeia.utils import roi_utils
@@ -41,7 +42,7 @@ class Tile(BoundingBox):
         stride=1.0,
         offset=(0, 0),
         data_transform_fn=None,
-    ) -> ['Tile']:
+    ) -> ["Tile"]:
         """
 
         Args:
@@ -95,6 +96,13 @@ class Tile(BoundingBox):
             self.y_min + self.width + self.padding,
         )
 
+    def get_item(self, dataset):
+        for item in dataset.items:
+            if self.item_id == item.image_id:
+                return item
+
+        return None
+
     def get_data(self, image: np.ndarray) -> np.ndarray:
         """
         Get the data with padding management from a dataset
@@ -128,6 +136,15 @@ class Tile(BoundingBox):
             return data
         else:
             return self.data_transform_fn(data)
+
+    def get_labels(self, labels: [Groundtruth]) -> [Groundtruth]:
+        labels_index = roi_utils.make_index(labels)
+        intersecting_labels = list(labels_index.intersection(self.bounds))
+        intersecting_labels = [labels[i] for i in intersecting_labels]
+        intersecting_labels = [gt.intersection(self) for gt in intersecting_labels]
+        intersecting_labels = self.bboxes_to_relative_coords(intersecting_labels)
+
+        return intersecting_labels
 
     def bboxes_to_absolute_coords(self, bboxes: [BoundingBox]) -> [BoundingBox]:
         """

@@ -4,8 +4,9 @@ Drawing bounding boxes on images helpers
 import cv2
 import matplotlib.colors
 import numpy as np
+
 from khumeia.data.item import SatelliteImage
-from khumeia.roi.tile import BoundingBox, LabelledTile, PredictionTile
+from khumeia.roi.tile import BoundingBox, LabelledTile, PredictionTile, Tile
 from khumeia.utils import roi_list_utils
 
 __all__ = ["draw_bbox_on_image", "draw_bboxes_on_image", "draw_item", "draw_item_with_tiles", "draw_item_with_results"]
@@ -66,6 +67,14 @@ def draw_item(item: SatelliteImage) -> np.ndarray:
     image = item.image
     labels = item.labels
     image = draw_bboxes_on_image(image, labels, color="lime")
+    return image
+
+
+def draw_tile(item: SatelliteImage, tile: Tile):
+    image = tile.get_data(item.image)
+    labels = tile.get_labels(item.labels)
+    image = draw_bboxes_on_image(image, labels, color="lime")
+
     return image
 
 

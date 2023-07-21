@@ -169,7 +169,7 @@ class BoundingBox:
             y_max = min(self.y_max, bbox.y_max)
             return (x_max - x_min) * (y_max - y_min) / (self.area + bbox.area - (x_max - x_min) * (y_max - y_min))
 
-    def translate(self, x_off: int, y_off: int):
+    def translate(self, x_off: int, y_off: int) -> "BoundingBox":
         """
 
         Args:
@@ -181,6 +181,8 @@ class BoundingBox:
         """
         self.x_min = self.x_min + x_off
         self.y_min = self.y_min + y_off
+
+        return self
 
     def __repr__(self):
         """

@@ -2,11 +2,11 @@ import json
 from typing import Callable, Optional
 
 import numpy as np
-import rtree.index
+
 from khumeia.data.item import SatelliteImage
-from khumeia.roi.bounding_box import BoundingBox
 from khumeia.roi.groundtruth import Groundtruth
 from khumeia.roi.tile import LabelledTile, Tile
+from khumeia.utils.roi_utils import make_index
 
 __all__ = ["TilesGenerator", "RandomTiles", "CenteredTiles", "SlidingWindow"]
 
@@ -26,14 +26,6 @@ class TilesGenerator:
         self.padding = padding
         self.data_transform_fn = data_transform_fn
 
-    @staticmethod
-    def make_index(bboxes: [BoundingBox]) -> rtree.index.Index:
-        indx = rtree.index.Index()
-        for i, bbox in enumerate(bboxes):
-            indx.insert(i, bbox.bounds)
-
-        return indx
-
     def get_tiles_for_item(self, item: SatelliteImage) -> [LabelledTile]:
         raise NotImplementedError
 
@@ -45,7 +37,7 @@ class TilesGenerator:
 
     def __str__(self):
         d = dict()
-        d['class'] = self.__class__.__name__
+        d["class"] = self.__class__.__name__
         d.update(self.__dict__)
         return json.dumps(d, indent=4)
 
@@ -85,7 +77,7 @@ class RandomTiles(TilesGenerator):
         h, w = item.shape[:2]
 
         labels = item.labels
-        labels_index = self.make_index(labels)
+        labels_index = make_index(labels)
 
         def _get_labelled_tile(t: Tile):
             intersecting_labels = list(labels_index.intersection(t.bounds))
@@ -202,7 +194,7 @@ class SlidingWindow(TilesGenerator):
             data_transform_fn=self.data_transform_fn,
         )
 
-        labels_index = self.make_index(labels)
+        labels_index = make_index(labels)
 
         def _get_labelled_tile(t: Tile):
             intersecting_labels = list(labels_index.intersection(t.bounds))

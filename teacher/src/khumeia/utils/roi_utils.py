@@ -1,5 +1,20 @@
+import rtree.index
+
 from khumeia.roi.bounding_box import BoundingBox
 from khumeia.roi.groundtruth import Groundtruth
+
+
+def make_index(bboxes: [BoundingBox]) -> rtree.index.Index:
+    """
+
+    Returns:
+        object:
+    """
+    indx = rtree.index.Index()
+    for i, bbox in enumerate(bboxes):
+        indx.insert(i, bbox.bounds)
+
+    return indx
 
 
 def get_label_from_bboxes_center(tile, bboxes, strict=True, margin_from_bounds=0):

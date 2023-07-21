@@ -1,18 +1,18 @@
 """
 Generating dataset helpers
 """
-import glob
 import random
 import shutil
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
+
 from khumeia import LOGGER
 from khumeia.data.dataset import Dataset
 from khumeia.data.item import SatelliteImage
-from khumeia.roi.tiles_generator import SlidingWindow
 from khumeia.roi.tiles_dumper import ImageItemTileDumper, NpArrayTileDumper
+from khumeia.roi.tiles_generator import SlidingWindow
 from khumeia.roi.tiles_sampler import TilesSampler
 from khumeia.utils import roi_list_utils
 
@@ -151,6 +151,7 @@ def dump_dataset_tiles(
     output_dir: Optional[Path] = None,
     remove_first=False,
     save_format="jpg",
+    with_objects: bool = False,
 ) -> Dataset:
     """
         High level helper function
@@ -195,11 +196,13 @@ def dump_dataset_tiles(
     def _dump_tiles(item):
         LOGGER.info("Dumping for item {}".format(item.key))
         if output_dir is not None:
-            tiles_dumper = ImageItemTileDumper(item, output_dir=output_dir, save_format=save_format)
+            tiles_dumper = ImageItemTileDumper(
+                item=item, output_dir=output_dir, save_format=save_format, dump_objects=with_objects
+            )
         else:
-            tiles_dumper = NpArrayTileDumper(item)
+            tiles_dumper = NpArrayTileDumper(item=item, dump_objects=with_objects)
         tiles_dataset_ = tiles_dataset.filter(lambda tile: tile.item_id == item.key, desc="Filtering")
-        tiles_dataset_ = tiles_dataset_.map(tiles_dumper, desc="Saving tiles to {}".format(output_dir))
+        tiles_dataset_ = tiles_dataset_.map(tiles_dumper, desc="Saving tiles to {}".format(output_dir or "numpy"))
 
         return tiles_dataset_.items
 
