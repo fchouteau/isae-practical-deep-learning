@@ -15,9 +15,9 @@ revealOptions:
 
 # Deep Learning in Practice
 
-**ISAE-SUPAERO, SDD, 23 Nov 2022**
+**ISAE-SUPAERO, SDD, 6 Dec. 2023**
 
-Florient CHOUTEAU, Quentin LETURGIE
+Florient CHOUTEAU, Dorian CAZENEUVE
 
 <!--v-->
 
