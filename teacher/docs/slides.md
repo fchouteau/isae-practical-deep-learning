@@ -593,7 +593,7 @@ Readings:
 
 <!--s-->
 
-### Extra : From classification to Detection
+### Extra : From classification to Detection and other use of CNNs for Vision
 
 <!--v-->
 
@@ -631,16 +631,28 @@ Instance Segmentation
 
 ![instseg](https://production-media.paperswithcode.com/methods/Screen_Shot_2020-05-23_at_7.44.34_PM.png)  <!-- .element: style="width: 60%; height: 40%"-->
 
+
 <!--v-->
 
 To learn more about this, see [this](http://cs231n.stanford.edu/slides/2022/lecture_9_jiajun.pdf)
 
 <!--v-->
 
+Keypoint Detection
+
+![keypoint](https://learnopencv.com/wp-content/uploads/2022/10/yolov7-mediapipe-human-pose-detection-feature-1.gif)  <!-- .element: style="width: 60%; height: 40%"-->
+
+<!--v-->
+
+Image Restoration
+
+![DLSS](https://i.ytimg.com/vi/eGHjP9zq53w/maxresdefault.jpg)
+
+<!--v-->
+
 Other keywords that are important for CNN in Computer Vision
 
-- Self-Supervised Learning
-- Vision Transformers
-- (Generative Adversarial Networks)
-- Diffusion Models (Imagen, StableDiffusion, ...)
-
+- [Self-Supervised Learning](http://cs231n.stanford.edu/slides/2023/lecture_13.pdf)
+- [Vision Transformers](https://www.v7labs.com/blog/vision-transformer-guide)
+- [Generative Adversarial Networks](https://github.com/SupaeroDataScience/deep-learning/tree/main/GAN)
+- [Diffusion Models](http://cs231n.stanford.edu/slides/2023/lecture_15.pdf) (StableDiffusion, MidJourney ...)

@@ -7,14 +7,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.7
+#       jupytext_version: 1.16.0
 #   kernelspec:
-#     display_name: py39-isae
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: py39-isae
+#     name: python3
 # ---
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # # Deep Learning for Computer Vision
 #
 # <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" align="left" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>&nbsp;| Florient Chouteau | <a href="https://supaerodatascience.github.io/deep-learning/">https://supaerodatascience.github.io/deep-learning/</a>
@@ -61,7 +61,7 @@ import skimage
 import skimage.data
 from matplotlib import pyplot as plt
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 img = skimage.data.astronaut()
 
 plt.figure(figsize=(5, 5))
@@ -88,11 +88,11 @@ plt.show()
 #
 # Usually we also use 8bits color depth
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # Plot the difference between the green and the red band
 # don't forget to convert the image type as the image are in unsigned type
 
-# %% tags=["solution"]
+# %% tags=["solution"] editable=true slideshow={"slide_type": ""}
 plt.imshow(
     (img[:, :, 0].astype(np.float32) - img[:, :, 1].astype(np.float32)), cmap="jet"
 )
@@ -138,7 +138,7 @@ plt.show()
 #
 # First, the convolution implementation without depth is quite simple : 
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 def convolve(img: np.array, kernel: np.array) -> np.array:
     k = kernel.shape[0]
     h, w = img.shape[:2]
@@ -166,19 +166,19 @@ def convolve(img: np.array, kernel: np.array) -> np.array:
     return convolved_img
 
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # What happens if I use this filter as input ?
 #
 # ![identity](https://wikimedia.org/api/rest_v1/media/math/render/svg/1fbc763a0af339e3a3ff20af60a8a993c53086a7)
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 k = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]
 k = np.asarray(k)
 
 k.shape
 print(k)
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 img = skimage.data.cat()
 img = img[:, :, 0]
 
@@ -186,7 +186,7 @@ print(img.shape)
 plt.imshow(img, cmap="gray")
 plt.show()
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 convolved_img = convolve(img, k)
 
 print(convolved_img.shape)
@@ -205,27 +205,27 @@ print(f"after {convolved_img.shape}")
 plt.imshow(convolved_img, cmap="gray")
 plt.show()
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # Too easy ! Let's try another filter
 #
 # ![](https://wikimedia.org/api/rest_v1/media/math/render/svg/91256bfeece3344f8602e288d445e6422c8b8a1c)
 #
 # What does it do ? Take a guess
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 k = np.asarray([[1, 1, 1], [1, 1, 1], [1, 1, 1]]).astype(np.float32)
 k = k / k.sum()
 print(k)
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # Convolve the cat image with this filter and plot it
 
-# %% tags=["solution"]
+# %% tags=["solution"] editable=true slideshow={"slide_type": ""}
 img = skimage.data.cat()
 img = img[:, :, 0]
 convolved_img = convolve(img, k)
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 print(convolved_img.shape)
 
 plt.imshow(convolved_img, cmap="gray")
@@ -236,7 +236,7 @@ plt.show()
 plt.imshow(convolved_img[64:129, 64:128], cmap="gray")
 plt.show()
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # If we wanted, we could learn the filters in order to do... cat classification !
 #
 # There are many more filters that have been designed to do interesting things, you can find an interesting list here : https://en.wikipedia.org/wiki/Kernel_(image_processing)
@@ -245,7 +245,7 @@ plt.show()
 #
 # **Takeaway message** : Kernel filtering (convolution) takes its root from classical image processing !
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # ### Convolutions with depth
 #
 # Let's get back to our GIF
@@ -254,25 +254,25 @@ plt.show()
 #
 # It's the same as above, except our filter takes all channels of the image as input. So basically a "Convolution" layer is a filter
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # **Important**
 #
 # In classical image processing, we use the (height, width, channels) convention, however in torch we prefer using (channels, height, width) convention 
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 img = skimage.data.astronaut()
 img.shape
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # To transpose an image, we use
 img = img.transpose((2, 0, 1))  # change channel order
 img.shape
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 w = np.random.random((1, 3, 3, 3))
 b = np.random.random((3,))
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # You should remember this from the previous class, this is the general implementation of convolutions
 
 
@@ -317,14 +317,14 @@ def forward_convolution(conv_W, conv_b, data):
 
     return output
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # Convolve the input with the weights and bias
 
 
-# %% tags=["solution"]
+# %% tags=["solution"] editable=true slideshow={"slide_type": ""}
 output = forward_convolution(w, b, img)
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 print("Input", img.shape)
 print(f"Filter:\n {w} \n {w.shape}")
 print("Bias:", b, b.shape)
@@ -336,14 +336,14 @@ plt.show()
 plt.imshow(output.transpose((1, 2, 0))[:, :, 0], cmap="gray")
 plt.show()
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # Some useful resources for more information :
 #
 # - The DL class https://github.com/fchouteau/deep-learning/blob/main/deep/Deep%20Learning.ipynb
 # - https://github.com/vdumoulin/conv_arithmetic
 # - https://towardsdatascience.com/intuitively-understanding-convolutions-for-deep-learning-1f6f42faee1
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # ## Convolutional Neural Networks
 #
 # I shamelessly copy pasted code from this excellent class : https://github.com/Atcold/pytorch-Deep-Learning/blob/master/06-convnet.ipynb
@@ -371,7 +371,7 @@ plt.show()
 #
 # Max pooling operations
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # Why do CNNs works ?
 #
 # To perform well, we need to incorporate some prior knowledge about the problem
@@ -386,17 +386,17 @@ plt.show()
 #     Convolutions: locality + stationarity of images
 #     Pooling: Invariance of object class to translations
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # ### Definitions
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 input_size = 28 * 28  # images are 28x28 pixels
 output_size = 10  # there are 10 classes
 
@@ -425,7 +425,7 @@ test_loader = torch.utils.data.DataLoader(
     shuffle=True,
 )
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # show some images
 plt.figure(figsize=(16, 6))
 for i in range(10):
@@ -435,7 +435,7 @@ for i in range(10):
     plt.axis("off");
 
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # function to count number of parameters
 def get_n_params(model):
     np = 0
@@ -485,16 +485,27 @@ class CNN(nn.Module):
         return self.network(x)
 
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # Switching between CPU and GPU in PyTorch is controlled via a device string, which will seemlessly determine whether GPU is available, falling back to CPU if not:
 
-# %%
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# %% editable=true slideshow={"slide_type": ""}
+# Apple Silicon Support
+if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    device = torch.device("mps")
+# NVIDIA GPU
+elif torch.cuda.is_available():
+    device = torch.device("cuda:0")
+# Fallback to CPU
+else:
+    device = torch.device("cpu")
 
-# %%
+print(device)
+
+# %% editable=true slideshow={"slide_type": ""}
 accuracy_list = []
 
 
+# %% editable=true slideshow={"slide_type": ""}
 def train(epoch, model, perm=torch.arange(0, 784).long()):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
@@ -554,13 +565,13 @@ def test(model, perm=torch.arange(0, 784).long()):
     )
 
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # ### CNNs vs Fully Connected Layers
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # A small FullyConnected ANN
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 n_hidden = 8  # number of hidden units
 
 model_fnn = FullyConnected2Layers(input_size, n_hidden, output_size)
@@ -573,10 +584,10 @@ for epoch in range(0, 1):
     train(epoch, model_fnn)
     test(model_fnn)
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # A CNN with the same number of parameters
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # Training settings
 n_features = 6  # number of feature maps
 
@@ -590,22 +601,22 @@ for epoch in range(0, 1):
     train(epoch, model_cnn)
     test(model_cnn)
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # The ConvNet performs better with the same number of parameters, thanks to its use of prior knowledge about images
 #
 #     Use of convolution: Locality and stationarity in images
 #     Pooling: builds in some translation invariance
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # ### What happens when CNNs assumptions are not true ?
 #
 # We will deterministically permute pixels so that the content of an image is respected but not its structure
 #
-# Basically transform some positions into others
+# Basically transform some positions into others, so that the spatial relationship between pixels is not respected anymore
 #
-# And we will train networks on this
+# And we will train networks on this : A CNN (convolutional) and a ANN (fully connected)
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 perm = torch.randperm(784)
 plt.figure(figsize=(16, 12))
 for i in range(10):
@@ -621,7 +632,10 @@ for i in range(10):
     plt.imshow(image_perm.squeeze().numpy())
     plt.axis("off")
 
-# %%
+# %% [markdown] editable=true slideshow={"slide_type": ""}
+# First, let's train a CNN
+
+# %% editable=true slideshow={"slide_type": ""}
 # Training settings
 n_features = 6  # number of feature maps
 
@@ -634,7 +648,10 @@ for epoch in range(0, 1):
     train(epoch, model_cnn, perm)
     test(model_cnn, perm)
 
-# %%
+# %% [markdown] editable=true slideshow={"slide_type": ""}
+# Then, a fully connected neural nets
+
+# %% editable=true slideshow={"slide_type": ""}
 n_hidden = 8  # number of hidden units
 
 model_fnn = FullyConnected2Layers(input_size, n_hidden, output_size)
@@ -646,7 +663,13 @@ for epoch in range(0, 1):
     train(epoch, model_fnn, perm)
     test(model_fnn, perm)
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
+# Let's now compare the accuracies of 4 neural networks :
+# - CNN with image assumption
+# - FC with image assumption
+# - CNN without image assumption
+# - FC with image assumption
+#
 # **Takeaway messages**
 #
 # The ConvNet's performance drops when we permute the pixels, but the Fully-Connected Network's performance stays the same
@@ -657,7 +680,7 @@ for epoch in range(0, 1):
 #     It does less well when it is true, since it doesn't take advantage of this prior knowledge
 #     But it doesn't suffer when the assumption is wrong
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 plt.bar(
     ("NN normal", "CNN normal", "CNN scrambled", "NN scrambled"),
     accuracy_list,

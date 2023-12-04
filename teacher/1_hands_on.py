@@ -8,19 +8,19 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.1
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
-# %% [markdown] {"tags": [], "id": "2iUXCk7tC1x5"}
+# %% [markdown] {"id": "2iUXCk7tC1x5", "editable": true, "slideshow": {"slide_type": ""}}
 # # Session 1 : Training your first aircraft classifier with pytorch
 #
 # <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" align="left" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>&nbsp;| Florient Chouteau | <a href="https://supaerodatascience.github.io/deep-learning/">https://supaerodatascience.github.io/deep-learning/</a>
 
-# %% [markdown] {"tags": [], "id": "yfn1RtChC1yD"}
+# %% [markdown] {"id": "yfn1RtChC1yD", "editable": true, "slideshow": {"slide_type": ""}}
 # ## Intro
 #
 # The objectives of this session is to apply what you learned during [the previous class on Deep Learning](https://supaerodatascience.github.io/deep-learning/) on a real dataset of satellite images.
@@ -40,475 +40,28 @@
 # - Activate the GPU runtime in colab
 # - Check using `!nvidia-smi` that you detect it
 
-# %% {"id": "xEo4VpHqC1yF"}
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
+# Installation script for torchinfo package
+# !pip install torchinfo
+
+# %% {"id": "xEo4VpHqC1yF", "editable": true, "slideshow": {"slide_type": ""}}
 # %matplotlib inline
 
-# %% {"id": "FG3_sWsWC1yH"}
+# %% {"id": "FG3_sWsWC1yH", "editable": true, "slideshow": {"slide_type": ""}}
 # Put your imports here
 import numpy as np
+import torchinfo
 
-# %% [markdown] {"tags": []}
-# ## Utils Definition / Ignore & hide
-#
-# Execute once and hide this section
-
-# %%
-# IGNORE THIS FUNCTION THIS IS AN UTIL, just execute once
-# Copyright The PyTorch Lightning team.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import warnings
-from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-import numpy as np
-import torch
-import torch.nn as nn
-from torch import Tensor
-from torch.utils.hooks import RemovableHandle
-
-PARAMETER_NUM_UNITS = [" ", "K", "M", "B", "T"]
-UNKNOWN_SIZE = "?"
-
-
-class LayerSummary:
-    """Summary class for a single layer in a :class:`~torch.nn.Module`.
-
-    It collects the following information:
-
-    * Type of the layer (e.g. Linear, BatchNorm1d, ...)
-    * Input shape
-    * Output shape
-    * Number of parameters
-
-    The input and output shapes are only known after the example input array was
-    passed through the model.
-
-    Example::
-        >>> model = torch.nn.Conv2d(3, 8, 3)
-        >>> summary = LayerSummary(model)
-        >>> summary.num_parameters
-        224
-        >>> summary.layer_type
-        'Conv2d'
-        >>> output = model(torch.rand(1, 3, 5, 5))
-        >>> summary.in_size
-        [1, 3, 5, 5]
-        >>> summary.out_size
-        [1, 8, 3, 3]
-
-    Args:
-        module: A module to summarize
-    """
-
-    def __init__(self, module: nn.Module) -> None:
-        super().__init__()
-        self._module = module
-        self._hook_handle = self._register_hook()
-        self._in_size: Optional[Union[str, List]] = None
-        self._out_size: Optional[Union[str, List]] = None
-
-    def __del__(self) -> None:
-        self.detach_hook()
-
-    def _register_hook(self) -> Optional[RemovableHandle]:
-        """Registers a hook that computes the input/output size(s) on the first forward pass.
-
-        If the hook is called, it will remove itself from the from the module, meaning that
-        recursive models will only record their input- and output shapes once.
-
-        Registering hooks on :class:`~torch.jit.ScriptModule` is not supported.
-
-        Return:
-            A handle for the installed hook, or ``None`` if registering the hook is not possible.
-        """
-
-        def hook(_: nn.Module, inp: Any, out: Any) -> None:
-            if len(inp) == 1:
-                inp = inp[0]
-            self._in_size = parse_batch_shape(inp)
-            self._out_size = parse_batch_shape(out)
-            assert self._hook_handle is not None
-            self._hook_handle.remove()
-
-        handle = None
-        if not isinstance(self._module, torch.jit.ScriptModule):
-            handle = self._module.register_forward_hook(hook)
-        return handle
-
-    def detach_hook(self) -> None:
-        """Removes the forward hook if it was not already removed in the forward pass.
-
-        Will be called after the summary is created.
-        """
-        if self._hook_handle is not None:
-            self._hook_handle.remove()
-
-    @property
-    def in_size(self) -> Union[str, List]:
-        return self._in_size or UNKNOWN_SIZE
-
-    @property
-    def out_size(self) -> Union[str, List]:
-        return self._out_size or UNKNOWN_SIZE
-
-    @property
-    def layer_type(self) -> str:
-        """Returns the class name of the module."""
-        return str(self._module.__class__.__name__)
-
-    @property
-    def num_parameters(self) -> int:
-        """Returns the number of parameters in this module."""
-        return sum(
-            np.prod(p.shape) if not _is_lazy_weight_tensor(p) else 0
-            for p in self._module.parameters()
-        )
-
-
-class ModelSummary:
-    """Generates a summary of all layers in a :class:`~torch.nn.Module`.
-
-    Args:
-        model: The model to summarize (also referred to as the root module).
-        max_depth: Maximum depth of modules to show. Use -1 to show all modules or 0 to show no
-            summary. Defaults to 1.
-        example_input_array (torch.Tensor): If provided, and example input aray which will be used
-            to infer the shape of tensors throughout the model.
-
-    The string representation of this summary prints a table with columns containing
-    the name, type and number of parameters for each layer.
-    The root module may also have an attribute ``example_input_array`` as shown in the example
-    below.
-
-    If present, the root module will be called with it as input to determine the
-    intermediate input- and output shapes of all layers. Supported are tensors and
-    nested lists and tuples of tensors. All other types of inputs will be skipped and show as `?`
-    in the summary table. The summary will also display `?` for layers not used in the forward pass.
-
-    Example::
-        >>> from torch.nn import Module
-        >>> class LitModel(Module):
-        ...
-        ...     def __init__(self):
-        ...         super().__init__()
-        ...         self.net = nn.Sequential(nn.Linear(256, 512), nn.BatchNorm1d(512))
-        ...         self.example_input_array = torch.zeros(10, 256)  # optional
-        ...
-        ...     def forward(self, x):
-        ...         return self.net(x)
-        ...
-        >>> model = LitModel()
-        >>> ModelSummary(model, max_depth=1)  # doctest: +NORMALIZE_WHITESPACE
-          | Name | Type       | Params | In sizes  | Out sizes
-        ------------------------------------------------------------
-        0 | net  | Sequential | 132 K  | [10, 256] | [10, 512]
-        ------------------------------------------------------------
-        132 K     Trainable params
-        0         Non-trainable params
-        132 K     Total params
-        0.530     Total estimated model params size (MB)
-        >>> ModelSummary(model, max_depth=-1)  # doctest: +NORMALIZE_WHITESPACE
-          | Name  | Type        | Params | In sizes  | Out sizes
-        --------------------------------------------------------------
-        0 | net   | Sequential  | 132 K  | [10, 256] | [10, 512]
-        1 | net.0 | Linear      | 131 K  | [10, 256] | [10, 512]
-        2 | net.1 | BatchNorm1d | 1.0 K    | [10, 512] | [10, 512]
-        --------------------------------------------------------------
-        132 K     Trainable params
-        0         Non-trainable params
-        132 K     Total params
-        0.530     Total estimated model params size (MB)
-    """
-
-    def __init__(self, model, max_depth=1, example_input_array=None) -> None:
-        self._model = model
-
-        # temporary mapping from mode to max_depth
-        if not isinstance(max_depth, int) or max_depth < -1:
-            raise ValueError(f"`max_depth` can be -1, 0 or > 0, got {max_depth}.")
-
-        self._max_depth = max_depth
-        self._example_input_array = example_input_array
-        self._layer_summary = self.summarize(example_input_array=example_input_array)
-        # 1 byte -> 8 bits
-        # TODO: how do we compute precision_megabytes in case of mixed precision?
-        precision = 32  # Fixme: Get precision from global dtype attribute
-        self._precision_megabytes = (precision / 8.0) * 1e-6
-
-    @property
-    def named_modules(self) -> List[Tuple[str, nn.Module]]:
-        mods: List[Tuple[str, nn.Module]]
-        if self._max_depth == 0:
-            mods = []
-        elif self._max_depth == 1:
-            # the children are the top-level modules
-            mods = list(self._model.named_children())
-        else:
-            mods = self._model.named_modules()
-            mods = list(mods)[1:]  # do not include root module (LightningModule)
-        return mods
-
-    @property
-    def layer_names(self) -> List[str]:
-        return list(self._layer_summary.keys())
-
-    @property
-    def layer_types(self) -> List[str]:
-        return [layer.layer_type for layer in self._layer_summary.values()]
-
-    @property
-    def in_sizes(self) -> List:
-        return [layer.in_size for layer in self._layer_summary.values()]
-
-    @property
-    def out_sizes(self) -> List:
-        return [layer.out_size for layer in self._layer_summary.values()]
-
-    @property
-    def param_nums(self) -> List[int]:
-        return [layer.num_parameters for layer in self._layer_summary.values()]
-
-    @property
-    def total_parameters(self) -> int:
-        return sum(
-            p.numel() if not _is_lazy_weight_tensor(p) else 0
-            for p in self._model.parameters()
-        )
-
-    @property
-    def trainable_parameters(self) -> int:
-        return sum(
-            p.numel() if not _is_lazy_weight_tensor(p) else 0
-            for p in self._model.parameters()
-            if p.requires_grad
-        )
-
-    @property
-    def model_size(self) -> float:
-        # todo: seems it does not work with quantized models - it returns 0.0
-        return self.total_parameters * self._precision_megabytes
-
-    def summarize(self, example_input_array=None) -> Dict[str, LayerSummary]:
-        summary = OrderedDict(
-            (name, LayerSummary(module)) for name, module in self.named_modules
-        )
-
-        if example_input_array is not None:
-            self._forward_example_input(example_input_array)
-
-        for layer in summary.values():
-            layer.detach_hook()
-
-        if self._max_depth >= 1:
-            # remove summary entries with depth > max_depth
-            for k in [k for k in summary if k.count(".") >= self._max_depth]:
-                del summary[k]
-
-        return summary
-
-    def _forward_example_input(self, example_input_array) -> None:
-        """Run the example input through each layer to get input- and output sizes."""
-        model = self._model
-
-        mode = model.training
-        model.eval()
-        with torch.no_grad():
-            # let the model hooks collect the input- and output shapes
-            if isinstance(example_input_array, (list, tuple)):
-                model(*example_input_array)
-            elif isinstance(example_input_array, dict):
-                model(**example_input_array)
-            else:
-                model(example_input_array)
-        model.train(mode)  # restore mode of module
-
-    def _get_summary_data(self) -> List[Tuple[str, List[str]]]:
-        """Makes a summary listing with:
-
-        Layer Name, Layer Type, Number of Parameters, Input Sizes, Output Sizes, Model Size
-        """
-        arrays = [
-            (" ", list(map(str, range(len(self._layer_summary))))),
-            ("Name", self.layer_names),
-            ("Type", self.layer_types),
-            ("Params", list(map(get_human_readable_count, self.param_nums))),
-        ]
-        if self._example_input_array is not None:
-            arrays.append(("In sizes", [str(x) for x in self.in_sizes]))
-            arrays.append(("Out sizes", [str(x) for x in self.out_sizes]))
-
-        return arrays
-
-    def __str__(self) -> str:
-        arrays = self._get_summary_data()
-
-        total_parameters = self.total_parameters
-        trainable_parameters = self.trainable_parameters
-        model_size = self.model_size
-
-        return _format_summary_table(
-            total_parameters, trainable_parameters, model_size, *arrays
-        )
-
-    def __repr__(self) -> str:
-        return str(self)
-
-
-def parse_batch_shape(batch: Any) -> Union[str, List]:
-    if hasattr(batch, "shape"):
-        return list(batch.shape)
-
-    if isinstance(batch, (list, tuple)):
-        shape = [parse_batch_shape(el) for el in batch]
-        return shape
-
-    return UNKNOWN_SIZE
-
-
-def _format_summary_table(
-    total_parameters: int,
-    trainable_parameters: int,
-    model_size: float,
-    *cols: Tuple[str, List[str]],
-) -> str:
-    """Takes in a number of arrays, each specifying a column in the summary table, and combines them all into one
-    big string defining the summary table that are nicely formatted."""
-    n_rows = len(cols[0][1])
-    n_cols = 1 + len(cols)
-
-    # Get formatting width of each column
-    col_widths = []
-    for c in cols:
-        col_width = max(len(str(a)) for a in c[1]) if n_rows else 0
-        col_width = max(col_width, len(c[0]))  # minimum length is header length
-        col_widths.append(col_width)
-
-    # Formatting
-    s = "{:<{}}"
-    total_width = sum(col_widths) + 3 * n_cols
-    header = [s.format(c[0], l) for c, l in zip(cols, col_widths)]
-
-    # Summary = header + divider + Rest of table
-    summary = " | ".join(header) + "\n" + "-" * total_width
-    for i in range(n_rows):
-        line = []
-        for c, l in zip(cols, col_widths):
-            line.append(s.format(str(c[1][i]), l))
-        summary += "\n" + " | ".join(line)
-    summary += "\n" + "-" * total_width
-
-    summary += "\n" + s.format(get_human_readable_count(trainable_parameters), 10)
-    summary += "Trainable params"
-    summary += "\n" + s.format(
-        get_human_readable_count(total_parameters - trainable_parameters), 10
-    )
-    summary += "Non-trainable params"
-    summary += "\n" + s.format(get_human_readable_count(total_parameters), 10)
-    summary += "Total params"
-    summary += "\n" + s.format(get_formatted_model_size(model_size), 10)
-    summary += "Total estimated model params size (MB)"
-
-    return summary
-
-
-def get_formatted_model_size(total_model_size: float) -> str:
-    return f"{total_model_size:,.3f}"
-
-
-def get_human_readable_count(number: int) -> str:
-    """Abbreviates an integer number with K, M, B, T.
-
-    Examples:
-        >>> get_human_readable_count(123)
-        '123  '
-        >>> get_human_readable_count(1234)  # (one thousand)
-        '1.2 K'
-        >>> get_human_readable_count(2e6)   # (two million)
-        '2.0 M'
-        >>> get_human_readable_count(3e9)   # (three billion)
-        '3.0 B'
-        >>> get_human_readable_count(4e14)  # (four hundred trillion)
-        '400 T'
-        >>> get_human_readable_count(5e15)  # (more than trillion)
-        '5,000 T'
-
-    Args:
-        number: a positive integer number
-
-    Return:
-        A string formatted according to the pattern described above.
-    """
-    assert number >= 0
-    labels = PARAMETER_NUM_UNITS
-    num_digits = int(np.floor(np.log10(number)) + 1 if number > 0 else 1)
-    num_groups = int(np.ceil(num_digits / 3))
-    num_groups = min(num_groups, len(labels))  # don't abbreviate beyond trillions
-    shift = -3 * (num_groups - 1)
-    number = number * (10**shift)
-    index = num_groups - 1
-    if index < 1 or number >= 100:
-        return f"{int(number):,d} {labels[index]}"
-
-    return f"{number:,.1f} {labels[index]}"
-
-
-def _is_lazy_weight_tensor(p: Tensor) -> bool:
-    from torch.nn.parameter import UninitializedParameter
-
-    if isinstance(p, UninitializedParameter):
-        warnings.warn(
-            "A layer with UninitializedParameter was found. "
-            "Thus, the total number of parameters detected may be inaccurate.",
-            UserWarning,
-        )
-        return True
-
-    return False
-
-
-def summarize(module, max_depth=None, example_input_array=None) -> ModelSummary:
-    """Summarize a PyTorch module.
-
-    Args:
-        module: The module to summarize.
-        max_depth: The maximum depth of layer nesting that the summary will include. A value of 0
-            turns the layer summary off. Default: 1.
-        example_input_array (torch.Tensor): If provided, and example input aray which will be used
-            to infer the shape of tensors throughout the model.
-
-    Return:
-        The model summary object
-    """
-    max_depth = 1 if max_depth is None else max_depth
-    model_summary = ModelSummary(
-        module, max_depth=max_depth, example_input_array=example_input_array
-    )
-
-    return model_summary
-
-
-# %% [markdown] {"id": "1nb7isjuC1yI"}
+# %% [markdown] {"id": "1nb7isjuC1yI", "editable": true, "slideshow": {"slide_type": ""}}
 # ## Dataset
 #
 # Récupération et exploration du datset
 
-# %% {"id": "XLml82VWC1yK"}
+# %% {"id": "XLml82VWC1yK", "editable": true, "slideshow": {"slide_type": ""}}
 # Configuration variables
 TOY_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/toy_aircraft_dataset.npz"
 
-# %% [markdown] {"id": "Shmmb50XC1yK"}
+# %% [markdown] {"id": "Shmmb50XC1yK", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Image (reminders)
 #
 # A digital image is an image composed of picture elements, also known as pixels, each with finite, discrete quantities of numeric representation for its intensity or gray level that is an output from its two-dimensional functions fed as input by its spatial coordinates denoted with x, y on the x-axis and y-axis, respectively.
@@ -526,7 +79,7 @@ TOY_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/t
 #
 # ![conventions](https://storage.googleapis.com/fchouteau-isae-deep-learning/static/image_coordinates.png)
 
-# %% [markdown] {"id": "nPa5zHUBC1yN"}
+# %% [markdown] {"id": "nPa5zHUBC1yN", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Downloading the dataset
 #
 # We will be using [numpy datasources](https://docs.scipy.org/doc/numpy/reference/generated/numpy.DataSource.html?highlight=datasources) to download the dataset. DataSources can be local files or remote files/URLs. The files may also be compressed or uncompressed. DataSource hides some of the low-level details of downloading the file, allowing you to simply pass in a valid file path (or URL) and obtain a file object.
@@ -540,7 +93,7 @@ TOY_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/t
 # ```
 # in a cell above the cell below
 
-# %% {"id": "aPxBx-2-C1yP"}
+# %% {"id": "aPxBx-2-C1yP", "editable": true, "slideshow": {"slide_type": ""}}
 ds = np.DataSource(destpath="/tmp/")
 f = ds.open(TOY_DATASET_URL, "rb")
 
@@ -550,10 +103,10 @@ trainval_labels = toy_dataset["train_labels"]
 test_images = toy_dataset["test_images"]
 test_labels = toy_dataset["test_labels"]
 
-# %% [markdown] {"id": "dRMdfPRKC1yR"}
+# %% [markdown] {"id": "dRMdfPRKC1yR", "editable": true, "slideshow": {"slide_type": ""}}
 # ### A bit of data exploration
 
-# %% [markdown] {"id": "KLD83Y7vC1yR"}
+# %% [markdown] {"id": "KLD83Y7vC1yR", "editable": true, "slideshow": {"slide_type": ""}}
 # **Q1. Labels counting**
 #
 # a. What is the dataset size ?
@@ -564,17 +117,17 @@ test_labels = toy_dataset["test_labels"]
 #
 # d. What are the dimensions (height and width) of the images ? What are the number of channels ?
 
-# %% [markdown] {"id": "5xkrtVx-C1yS"}
+# %% [markdown] {"id": "5xkrtVx-C1yS", "editable": true, "slideshow": {"slide_type": ""}}
 # **Q2. Can you plot at least 8 examples of each label ? In a 4x4 grid ?**
 
-# %% [markdown] {"id": "n_fynC7iC1yT"}
+# %% [markdown] {"id": "n_fynC7iC1yT", "editable": true, "slideshow": {"slide_type": ""}}
 # Here are some examples that help you answer this question. Try them and make your own. A well-understandood dataset is the key to an efficient model.
 
-# %% {"id": "7XcQrRWKC1yT"}
+# %% {"id": "7XcQrRWKC1yT", "editable": true, "slideshow": {"slide_type": ""}}
 import cv2
 import matplotlib.pyplot as plt
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "l7wcKYZBC1yU", "outputId": "4068a524-b60a-48ec-f40d-9538e2ea425f"}
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "l7wcKYZBC1yU", "outputId": "4068a524-b60a-48ec-f40d-9538e2ea425f", "editable": true, "slideshow": {"slide_type": ""}}
 LABEL_NAMES = ["Not an aircraft", "Aircraft"]
 
 print("Labels counts :")
@@ -586,7 +139,7 @@ for l, label in enumerate(LABEL_NAMES):
         f"Examples shape for label {l} : {trainval_images[trainval_labels == l, ::].shape}"
     )
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "ArvB0PsXC1yW", "outputId": "84db6bb2-22b4-4384-d197-2ddcac18d9fd"}
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "ArvB0PsXC1yW", "outputId": "84db6bb2-22b4-4384-d197-2ddcac18d9fd", "editable": true, "slideshow": {"slide_type": ""}}
 LABEL_NAMES = ["Not an aircraft", "Aircraft"]
 
 print("Labels counts :")
@@ -596,7 +149,7 @@ for l, c, label in zip(*np.unique(test_labels, return_counts=True), LABEL_NAMES)
 for l, label in enumerate(LABEL_NAMES):
     print(f"Examples shape for label {l} : {test_images[test_labels == l, ::].shape}")
 
-# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 594}, "id": "ol6QpoP6C1yX", "outputId": "5d445c41-2ed8-4f75-ed45-5ba1e25a2c8f"}
+# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 594}, "id": "ol6QpoP6C1yX", "outputId": "5d445c41-2ed8-4f75-ed45-5ba1e25a2c8f", "editable": true, "slideshow": {"slide_type": ""}}
 grid_size = 4
 grid = np.zeros((grid_size * 64, grid_size * 64, 3)).astype(np.uint8)
 for i in range(grid_size):
@@ -612,7 +165,7 @@ ax = fig.add_subplot(1, 1, 1)
 ax.imshow(grid)
 plt.show()
 
-# %% [markdown] {"id": "gFtNYE6EC1yY"}
+# %% [markdown] {"id": "gFtNYE6EC1yY", "editable": true, "slideshow": {"slide_type": ""}}
 # ### A bit about train-test
 #
 # You just downloaded a training and a test set.
@@ -635,7 +188,7 @@ plt.show()
 #
 # We will do a 80/20 sampling
 
-# %% {"id": "gHmjoZhLC1yZ"}
+# %% {"id": "gHmjoZhLC1yZ", "editable": true, "slideshow": {"slide_type": ""}}
 idxs = np.random.permutation(np.arange(trainval_images.shape[0]))
 
 train_idxs, val_idxs = idxs[: int(0.8 * len(idxs))], idxs[int(0.8 * len(idxs)) :]
@@ -645,14 +198,14 @@ train_labels = trainval_labels[train_idxs]
 val_images = trainval_images[val_idxs]
 val_labels = trainval_labels[val_idxs]
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "7cfe6Yu6C1yZ", "outputId": "9d35706f-c6b9-4d44-fde4-e7509580b865"}
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "7cfe6Yu6C1yZ", "outputId": "9d35706f-c6b9-4d44-fde4-e7509580b865", "editable": true, "slideshow": {"slide_type": ""}}
 train_images.shape
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # What is the mean of our data ? 
 # Whats is the standard deviation ?
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 # Compute the dataset statistics in [0.,1.], we're going to use it to normalize our data
 
 mean = np.mean(train_images, axis=(0, 1, 2)) / 255.0
@@ -660,7 +213,7 @@ std = np.std(train_images, axis=(0, 1, 2)) / 255.0
 
 mean, std
 
-# %% [markdown] {"id": "SZ6VBCvQC1ya"}
+# %% [markdown] {"id": "SZ6VBCvQC1ya", "editable": true, "slideshow": {"slide_type": ""}}
 # ## Preparing our training
 #
 # Remember that training a deep learning model requires:
@@ -677,7 +230,7 @@ mean, std
 # ![](https://pbs.twimg.com/media/E_1d06XVcA8Dhzs?format=jpg)
 #
 
-# %% {"id": "10ow7xWIC1ya"}
+# %% {"id": "10ow7xWIC1ya", "editable": true, "slideshow": {"slide_type": ""}}
 from typing import Callable
 
 import torch
@@ -687,7 +240,7 @@ from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 
-# %% [markdown] {"id": "AKqUcnCcC1yb"}
+# %% [markdown] {"id": "AKqUcnCcC1yb", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Defining Dataset & Transforms
 #
 # First, we need to tell pytorch how to load our data.
@@ -696,7 +249,7 @@ from torchvision import datasets, transforms
 #
 # We write our own `torch.data.Dataset` class
 
-# %% {"id": "uvFjmzHoC1yb"}
+# %% {"id": "uvFjmzHoC1yb", "editable": true, "slideshow": {"slide_type": ""}}
 class NpArrayDataset(Dataset):
     def __init__(
         self,
@@ -730,10 +283,10 @@ class NpArrayDataset(Dataset):
         return x, y
 
 
-# %% [markdown] {"id": "0Z4N5o8AC1yb"}
+# %% [markdown] {"id": "0Z4N5o8AC1yb", "editable": true, "slideshow": {"slide_type": ""}}
 # Then we need to process our data (images) into "tensors" that torch can process, we define "transforms"
 
-# %% {"id": "PahdjhR5C1yc"}
+# %% {"id": "PahdjhR5C1yc", "editable": true, "slideshow": {"slide_type": ""}}
 # transform to convert np array in range [0,255] to torch.Tensor [0.,1.]
 # then normalize by doing x = (x - mean) / std
 image_transforms = transforms.Compose(
@@ -746,10 +299,10 @@ image_transforms = transforms.Compose(
 # here we don't have anything to do
 target_transforms = None
 
-# %% [markdown] {"id": "p9QH51F-C1yc"}
+# %% [markdown] {"id": "p9QH51F-C1yc", "editable": true, "slideshow": {"slide_type": ""}}
 # Now we put everything together into something to load our data
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "CR14oNXyC1yd", "outputId": "55d52439-7ffc-46a6-d7fb-13c0b173e761"}
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "CR14oNXyC1yd", "outputId": "55d52439-7ffc-46a6-d7fb-13c0b173e761", "editable": true, "slideshow": {"slide_type": ""}}
 # load the training data
 train_set = NpArrayDataset(
     images=train_images,
@@ -774,7 +327,7 @@ print(len(validation_set))
 
 val_loader = DataLoader(validation_set, batch_size=64, shuffle=True)
 
-# %% [markdown] {"id": "0yxUYemIC1yd"}
+# %% [markdown] {"id": "0yxUYemIC1yd", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Check that your dataset outputs correct data
 #
 # Always to this as a sanity check to catch bugs in your data processing pipeline
@@ -783,7 +336,7 @@ val_loader = DataLoader(validation_set, batch_size=64, shuffle=True)
 #
 # ![andrej](https://storage.googleapis.com/fchouteau-isae-deep-learning/static/andrej_tweet_1.png)
 
-# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 116}, "id": "Ic2sE836C1ye", "outputId": "db784726-e3e0-40c3-d9ff-9e0ec597d28e"}
+# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 116}, "id": "Ic2sE836C1ye", "outputId": "db784726-e3e0-40c3-d9ff-9e0ec597d28e", "editable": true, "slideshow": {"slide_type": ""}}
 k = np.random.randint(len(train_set))
 x, y = train_set[k]
 
@@ -803,20 +356,28 @@ plt.show()
 plt.imshow(train_set.images[k])
 plt.show()
 
-# %% [markdown] {"id": "4np1A43JC1yf"}
+# %% [markdown] {"id": "4np1A43JC1yf", "editable": true, "slideshow": {"slide_type": ""}}
 # ## Model
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### On which device will we train ?
 #
 # We will check if we have a GPU and set the "device" of pytorch on it so that it trains on GPU 
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "BmV9carLC1yf", "outputId": "dba28689-a129-4ae1-facc-41f9d3e55f8e"}
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "BmV9carLC1yf", "outputId": "dba28689-a129-4ae1-facc-41f9d3e55f8e", "editable": true, "slideshow": {"slide_type": ""}}
+# Apple Silicon Support
+if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    DEVICE = torch.device("mps")
+# NVIDIA GPU
+elif torch.cuda.is_available():
+    DEVICE = torch.device("cuda:0")
+# Fallback to CPU
+else:
+    DEVICE = torch.device("cpu")
 
 print(DEVICE)
 
-# %% [markdown] {"id": "AJ3oVqOHC1yg"}
+# %% [markdown] {"id": "AJ3oVqOHC1yg", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Defining a model and computing the parameters
 #
 # Now we have to define a CNN to train. It's usually called a "network", and we define its "architecture".
@@ -885,7 +446,7 @@ print(DEVICE)
 #
 # Do you understand why ? 
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "hd06b1EnC1yh", "outputId": "039eb3c0-b120-4288-e404-f1e70bb76a48"}
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "hd06b1EnC1yh", "outputId": "039eb3c0-b120-4288-e404-f1e70bb76a48", "editable": true, "slideshow": {"slide_type": ""}}
 # Let's test this !
 
 some_model = nn.Sequential(
@@ -928,19 +489,29 @@ y = some_model(x)
 print(y.shape)
 
 # Let's visualize each shape using our summarize helper
-print(summarize(some_model, example_input_array=x))
+print(
+    torchinfo.summary(
+        some_model,
+        input_data=x,
+        columns=[
+            "input_size",
+            "output_size",
+            "num_params",
+        ],
+    )
+)
 
 # let's delete the model now, we won't need it
 del some_model
 
-# %% [markdown] {"id": "YPpPpXwZC1yh"}
+# %% [markdown] {"id": "YPpPpXwZC1yh", "editable": true, "slideshow": {"slide_type": ""}}
 # **Let's do it yourself !**
 #
 # About weight init :
 # - https://machinelearningmastery.com/weight-initialization-for-deep-learning-neural-networks/
 # - https://www.pyimagesearch.com/2021/05/06/understanding-weight-initialization-for-neural-networks/
 
-# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 398}, "id": "d5nx-e0VC1yh", "outputId": "b4f8293d-996e-4e95-bcbc-0442c991ebbe"}
+# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 398}, "id": "d5nx-e0VC1yh", "outputId": "b4f8293d-996e-4e95-bcbc-0442c991ebbe", "editable": true, "slideshow": {"slide_type": ""}}
 # Let's define another model, except this time there are blanks ... it's up to you to fill them
 
 
@@ -981,7 +552,7 @@ def model_fn():
     return model
 
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 model = model_fn()
 
 print(model)
@@ -996,11 +567,21 @@ y = model(x)
 
 print(y.shape)
 
-print(summarize(model, example_input_array=x))
+print(
+    torchinfo.summary(
+        some_model,
+        input_data=x,
+        col_names=[
+            "input_size",
+            "output_size",
+            "num_params",
+        ],
+    )
+)
 
 # THIS CELL SHOULD NOT GIVE AN ERROR !
 
-# %% [markdown] {"id": "nxb-JeDnC1yk"}
+# %% [markdown] {"id": "nxb-JeDnC1yk", "editable": true, "slideshow": {"slide_type": ""}}
 # Hint: The answer (and there can only be one) is :
 #
 # <details>
@@ -1121,7 +702,7 @@ print(summarize(model, example_input_array=x))
 #
 # You should be able to understand this
 
-# %% {"tags": ["solution"], "id": "9gpZy_3cC1yk"}
+# %% {"tags": ["solution"], "id": "9gpZy_3cC1yk", "editable": true, "slideshow": {"slide_type": ""}}
 def _init_weights(model):
     # about weight initialization
     # https://machinelearningmastery.com/weight-initialization-for-deep-learning-neural-networks/
@@ -1178,25 +759,35 @@ y = model(x)
 
 print(y.shape)
 
-print(summarize(model, example_input_array=x))
+print(
+    torchinfo.summary(
+        model,
+        input_data=x,
+        col_names=[
+            "input_size",
+            "output_size",
+            "num_params",
+        ],
+    )
+)
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "DAv9FrjAC1yl", "outputId": "6b42440f-8806-41e3-dc97-ecb499de36bd"}
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "DAv9FrjAC1yl", "outputId": "6b42440f-8806-41e3-dc97-ecb499de36bd", "editable": true, "slideshow": {"slide_type": ""}}
 # moving model to gpu if available
 model = model.to(DEVICE)
 
-# %% [markdown] {"id": "LhpN-UNfC1yl"}
+# %% [markdown] {"id": "LhpN-UNfC1yl", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Defining our loss and optimizer
 #
 # Check the definition of the binary cross entropy:
 #
 # https://pytorch.org/docs/stable/generated/torch.nn.BCELoss.html#torch.nn.BCELoss
 
-# %% {"id": "6w1BHLnoC1ym"}
+# %% {"id": "6w1BHLnoC1ym", "editable": true, "slideshow": {"slide_type": ""}}
 criterion = nn.BCELoss(reduction="mean")
 optimizer = optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)
 
 
-# %% [markdown] {"id": "8d1qaMZ8C1ym"}
+# %% [markdown] {"id": "8d1qaMZ8C1ym", "editable": true, "slideshow": {"slide_type": ""}}
 # ## Training with pytorch
 #
 # We will actually train the model, and plot training & validation metrics during training
@@ -1208,13 +799,11 @@ optimizer = optim.SGD(model.parameters(), lr=1e-2, momentum=0.9)
 # %% [markdown]
 # ### Defining the Training loop
 
-# %% {"id": "xfP8tBSMC1yn"}
+# %% {"id": "xfP8tBSMC1yn", "editable": true, "slideshow": {"slide_type": ""}}
 def train_one_epoch(model, train_loader):
-
     epoch_loss = []
 
     for i, batch in enumerate(train_loader):
-
         # get one batch
         x, y_true = batch
         x = x.to(DEVICE)
@@ -1248,7 +837,6 @@ def train_one_epoch(model, train_loader):
 
 
 def valid_one_epoch(model, valid_loader):
-
     epoch_loss = []
 
     for i, batch in enumerate(valid_loader):
@@ -1273,50 +861,67 @@ def valid_one_epoch(model, valid_loader):
     return np.asarray(epoch_loss).mean()
 
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Putting everything together to run a training
-#
-# Here we copy paste previous code so that you are sure you have setup everything correctly
 
-# %%
-model = model_fn()
-
-# moving model to gpu if available
-model = model.to(DEVICE)
-
-print(model)
-
-x = x.to(DEVICE)
-
-# We define an input of dimensions batch_size, channels, height, width
-x = torch.rand((16, 3, 64, 64))
-
-print(x.shape)
-
-y = model(x)
-
-print(y.shape)
-
-print(summarize(model, example_input_array=x))
-
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # **Hyperparameters**
 #
-# Here we define what we call hyperparameters, the "meta-parameters" of the training that you can modify to affect your training
+# We also define what we call hyperparameters, the "meta-parameters" of the training that you can modify to affect your training
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 EPOCHS = 10  # Set number of epochs, example 100
 LEARNING_RATE = 1e-2
 MOMENTUM = 0.9
 
-# %%
-criterion = nn.BCELoss(reduction="mean")
-optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM,weight_decay=1e-4)
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
+# Here we copy paste previous code into a function (so that you reset your training everytime) so that you are sure you have setup everything correctly
+#
+
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
+def setup_training():
+    model = model_fn()
+
+    # moving model to gpu if available
+    model = model.to(DEVICE)
+
+    print(model)
+
+    # We define an input of dimensions batch_size, channels, height, width
+    x = torch.rand((16, 3, 64, 64))
+    x = x.to(DEVICE)
+
+    print(x.shape)
+
+    y = model(x)
+
+    print(y.shape)
+
+    print(torchinfo.summary(model, input_data=x))
+
+    criterion = nn.BCELoss(reduction="mean")
+    optimizer = optim.SGD(
+        model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM, weight_decay=1e-4
+    )
+
+    return model, criterion, optimizer
+
+
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
+# Why do we wrap it into a function ? Try executing your notebook in the wrong order and see what happens !
+#
+# You can see that if you redefine a model, then the optimizer is called on the wrong parameters !
+#
+# Note that we defined some hyperparameters beyond the function, be careful of what we call "the scope". You could also pass them as parameters of your function
+
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # Let's go !
 
-# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "6fwFxOOFGQkZ", "outputId": "a6da7c86-8233-4257-cf0f-86d6ff13ea88"}
+# %% {"colab": {"base_uri": "https://localhost:8080/"}, "id": "6fwFxOOFGQkZ", "outputId": "a6da7c86-8233-4257-cf0f-86d6ff13ea88", "editable": true, "slideshow": {"slide_type": ""}}
+# Init the training
+model, criterion, optimizer = setup_training()
+
 # Send model to GPU
 model = model.to(DEVICE)
 
@@ -1335,7 +940,7 @@ for epoch in range(EPOCHS):
     train_losses.append(train_epoch_loss)
     valid_losses.append(valid_epoch_loss)
 
-# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 279}, "id": "sFTlE66MC1yo", "outputId": "3f24cd80-7722-4228-e74e-7b4e2759fcb1"}
+# %% {"colab": {"base_uri": "https://localhost:8080/", "height": 279}, "id": "sFTlE66MC1yo", "outputId": "3f24cd80-7722-4228-e74e-7b4e2759fcb1", "editable": true, "slideshow": {"slide_type": ""}}
 # Plot training / validation loss
 plt.plot(train_losses, label="Training Loss")
 plt.plot(valid_losses, label="Validation Loss")
@@ -1344,7 +949,7 @@ plt.ylabel("Loss")
 plt.legend(frameon=False)
 plt.show()
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Training analysis
 #
 # How would you analyze your training ?
@@ -1353,7 +958,7 @@ plt.show()
 #
 # Is it overfitting ?
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Model saving
 #
 # There are several ways to save your model :
@@ -1371,19 +976,19 @@ plt.show()
 # The third option requires you to redefine an empty model with the same architecture and load the weights, because we are only saving the "state" (e.g. parameters, weights, biases)
 # The fourth option allow to make a "self-contained" model that can be used later, but comes with caveats
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### State dict saving 
 #
 # This is the recommended method because it allows to reuse the model with any code
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 # State dict saving
 with open("model.pt", "wb") as f:
     torch.save(model.state_dict(), f)
 
 # See below for how to reload the model
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # To reload such a model, you have to instantiate an empty model with the same architecture then load the state dict (the weights)
 # ```python
 # # Instantiate a new empty model
@@ -1400,7 +1005,7 @@ with open("model.pt", "wb") as f:
 #
 # This is very nice because you get a model that you can finetune, retrain, modify. However, this means that you have to "port" the model definition code to production. 
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Model scripting
 #
 # But for production, in order to avoid shipping the model definition code, we like to have an "self-contained" binary that we can deliver to the production team (you will see such a case during our next class together for cloud computing)
@@ -1409,7 +1014,7 @@ with open("model.pt", "wb") as f:
 #
 # https://pytorch.org/docs/stable/jit.html
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 import torch.jit
 
 # Put the model in eval mode
@@ -1426,37 +1031,37 @@ print(scripted_model)
 # Scripted model reloading (demo)
 scripted_model = torch.jit.load("scripted_model.pt", map_location=DEVICE)
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Download the scripted model
 #
 # We are going to download the scripted model to be able to re-use it elsewhere (in another notebook for example), without having to rewrite the model definition function
 #
 # Uncomment this on google colab to download the model
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 # from google.colab import files
 
 # files.download('scripted_model.pt')
 
-# %% [markdown] {"id": "VqMkcDroC1yp"}
+# %% [markdown] {"id": "VqMkcDroC1yp", "editable": true, "slideshow": {"slide_type": ""}}
 # We have finished what we need to do with the model, let's delete it !
 
-# %% {"id": "btrb85LmC1yp"}
+# %% {"id": "btrb85LmC1yp", "editable": true, "slideshow": {"slide_type": ""}}
 del model
 
-# %% [markdown] {"id": "QW5XvyyZC1yq"}
+# %% [markdown] {"id": "QW5XvyyZC1yq", "editable": true, "slideshow": {"slide_type": ""}}
 # ## Testing our models and computing metrics
 #
 # Now that we have a trained network, it is important to measure how well it performs. We do not do that during training because theoretically we try to test on a context closer to how the final model will be used, meaning this can be another pipeline and is usually outside the training engine.
 #
 # You can refer to your ML course or on resources on the web to see how we can measure it.
 
-# %% [markdown] {"id": "g0TldNDQC1yq"}
+# %% [markdown] {"id": "g0TldNDQC1yq", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Loading saved model
 #
 # State dict method
 
-# %% {"id": "Q-kCmgWEC1yr"}
+# %% {"id": "Q-kCmgWEC1yr", "editable": true, "slideshow": {"slide_type": ""}}
 # Instantiate a new empty model
 model = model_fn()
 
@@ -1468,12 +1073,12 @@ model.load_state_dict(torch.load(checkpoint_path))
 
 print("Model Loaded")
 
-# %% [markdown] {"id": "a-rbNh7qC1yr"}
+# %% [markdown] {"id": "a-rbNh7qC1yr", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Inferencing on the test dataset
 #
 # Now we will run predictions on the test dataset using the newly loaded model
 
-# %% {"id": "LjlrKEEOC1yr"}
+# %% {"id": "LjlrKEEOC1yr", "editable": true, "slideshow": {"slide_type": ""}}
 test_ds = NpArrayDataset(
     images=test_images,
     labels=test_labels,
@@ -1481,10 +1086,10 @@ test_ds = NpArrayDataset(
     label_transforms=target_transforms,
 )
 
-# %% {"id": "Jf3oIRA4C1yr"}
+# %% {"id": "Jf3oIRA4C1yr", "editable": true, "slideshow": {"slide_type": ""}}
 import tqdm
 
-# %% {"id": "VWM757ggC1ys"}
+# %% {"id": "VWM757ggC1ys", "editable": true, "slideshow": {"slide_type": ""}}
 y_true = []
 y_pred = []
 
@@ -1509,19 +1114,19 @@ with torch.no_grad():
 y_pred = np.concatenate(y_pred, axis=0)
 y_true = np.asarray(y_true)
 
-# %% {"id": "awHUQ2KxC1ys"}
+# %% {"id": "awHUQ2KxC1ys", "editable": true, "slideshow": {"slide_type": ""}}
 print(y_pred.shape)
 
 print(y_pred[4])
 
-# %% {"id": "aGqeE1UJC1ys"}
+# %% {"id": "aGqeE1UJC1ys", "editable": true, "slideshow": {"slide_type": ""}}
 y_pred_classes = y_pred[:, 0] > 0.5
 
-# %% [markdown] {"id": "wMuCtss8C1ys"}
+# %% [markdown] {"id": "wMuCtss8C1ys", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Confusion matrix
 # Here, we are first computing the [confusion matrix]():
 
-# %% {"id": "QSq5-t7dC1yt"}
+# %% {"id": "QSq5-t7dC1yt", "editable": true, "slideshow": {"slide_type": ""}}
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
 print("Confusion matrix")
@@ -1534,7 +1139,7 @@ disp = ConfusionMatrixDisplay(
 disp.plot()
 plt.show()
 
-# %% [markdown] {"id": "Ao41bfOuC1yt", "tags": []}
+# %% [markdown] {"id": "Ao41bfOuC1yt", "editable": true, "slideshow": {"slide_type": ""}}
 # ### ROC curve
 #
 # The next metric we are computing is the [Receiver Operating Characteristic](https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html). A receiver operating characteristic curve, or ROC curve, is a graphical plot that illustrates the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The method was originally developed for operators of military radar receivers starting in 1941, which led to its name. 
@@ -1545,7 +1150,7 @@ plt.show()
 #
 # It is used to choose a threshold on the output probability in case you are interesting in controling the false positive rate.
 
-# %% {"id": "sEj4ZBgTC1yt"}
+# %% {"id": "sEj4ZBgTC1yt", "editable": true, "slideshow": {"slide_type": ""}}
 # Compute ROC curve and Area Under Curver
 
 from sklearn.metrics import auc, roc_curve
@@ -1556,7 +1161,7 @@ y_pred_probas = np.round(y_pred[:, 0], 2)
 fpr, tpr, thresholds = roc_curve(y_true, y_pred_probas)
 roc_auc = auc(fpr, tpr)
 
-# %% {"id": "KGD6ukiMC1yu"}
+# %% {"id": "KGD6ukiMC1yu", "editable": true, "slideshow": {"slide_type": ""}}
 plt.figure()
 lw = 2
 plt.plot(
@@ -1571,14 +1176,14 @@ plt.title("Receiver operating characteristic example")
 plt.legend(loc="lower right")
 plt.show()
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Using the ROC curve to select an optimal threshold
 #
 # The ROC curve can be used to select the best decision threshold for classifying an aircraft as positive.
 #
 # Plot the ROC curve with thresholds assigned to points in the curve (you can round the predictions for a simpler curve)
 
-# %% {"tags": []}
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 # We round predictions every 0.05 for readability
 y_pred_probas = (y_pred[:, 0] / 0.05).astype(np.int) * 0.05
 
@@ -1607,10 +1212,10 @@ for tp, fp, t in zip(tpr, fpr, thresholds):
 plt.savefig("roc_curve_thresholds.png")
 plt.show()
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # Now, choose a threshold on the curve where you miss less than 10% of the aircrafts
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 selected_threshold = ...
 
 print("Confusion matrix")
@@ -1628,14 +1233,14 @@ plt.show()
 
 # How did the confusion matrix evolve ? Does it match your intuition ?
 
-# %% [markdown] {"id": "ql5f8eLHC1yu"}
+# %% [markdown] {"id": "ql5f8eLHC1yu", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Misclassified examples
 #
 # It is always interesting to check mis classified examples.
 #
 # It usually provides tips on how to improve your model.
 
-# %% {"id": "Z0wvNDzmC1yv"}
+# %% {"id": "Z0wvNDzmC1yv", "editable": true, "slideshow": {"slide_type": ""}}
 misclassified_idxs = np.where(y_pred_classes != y_true)[0]
 
 print(len(misclassified_idxs))
@@ -1661,14 +1266,14 @@ ax = fig.add_subplot(1, 1, 1)
 ax.imshow(grid)
 plt.show()
 
-# %% [markdown] {"id": "-DDeFy4cC1yv"}
+# %% [markdown] {"id": "-DDeFy4cC1yv", "editable": true, "slideshow": {"slide_type": ""}}
 # ## Improving our training / validation loop
 #
 # We will add more advanced features to our training loop for better models
 #
 # Copy the train / valid loop and update it accordingly
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Computing accuracy during training / validation
 #
 # Update the `valid_one_epoch` to compute accuracy during during the validation loop, and plot its evolution during training
@@ -1697,16 +1302,16 @@ plt.show()
 #
 # ```                                             
 
-# %% [markdown] {"id": "84qzXDMGC1yw"}
+# %% [markdown] {"id": "84qzXDMGC1yw", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Early stopping
 #
 # You've seen that it is possible to overfit it you're not careful,
 #
 # **Go back to your previous class and adapt the training loop to add early stopping**
 
-# %% {"id": "NW7rLbdGC1yx"}
+# %% {"id": "NW7rLbdGC1yx", "editable": true, "slideshow": {"slide_type": ""}}
 
-# %% [markdown] {"id": "4XRzekUGC1yy"}
+# %% [markdown] {"id": "4XRzekUGC1yy", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Data Augmentation
 #
 #
@@ -1729,12 +1334,12 @@ plt.show()
 # **Remember : We apply data augmentation only during training**
 #
 
-# %% {"id": "ua4UQAZWC1yy"}
+# %% {"id": "ua4UQAZWC1yy", "editable": true, "slideshow": {"slide_type": ""}}
 import torch.functional as F
 import torch.utils
 import torchvision.transforms
 
-# %% {"id": "em78uFlnC1yy"}
+# %% {"id": "em78uFlnC1yy", "editable": true, "slideshow": {"slide_type": ""}}
 # Example (very simple) data augmentation to get your started, you can add more transforms to this list
 
 train_transform = torchvision.transforms.Compose(
@@ -1747,7 +1352,8 @@ train_transform = torchvision.transforms.Compose(
     ]
 )
 
-# %% {"id": "5yPlhQbzC1yy"}
+# %% {"id": "5yPlhQbzC1yy", "editable": true, "slideshow": {"slide_type": ""}}
+# Example
 trainset_augmented = NpArrayDataset(
     images=train_images,
     labels=train_labels,
@@ -1755,7 +1361,7 @@ trainset_augmented = NpArrayDataset(
     label_transforms=None,
 )
 
-# %% {"id": "MeKVDcHrC1yz"}
+# %% {"id": "MeKVDcHrC1yz", "editable": true, "slideshow": {"slide_type": ""}}
 # Get image from dataset. Note: it has been converted as a torch tensor in CHW format in float32 normalized !
 img, label = trainset_augmented[0]
 img = img.numpy().transpose((1, 2, 0)) * std + mean
@@ -1769,10 +1375,10 @@ img_orig = trainset_augmented.images[0]
 plt.imshow(img_orig)
 plt.show()
 
-# %% {"id": "ej7Jb0SNC1yz"}
+# %% {"id": "ej7Jb0SNC1yz", "editable": true, "slideshow": {"slide_type": ""}}
 # do another training and plot our metrics again. Did we change something ?
 
-# %% [markdown] {"tags": []}
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Best checkpoint
 #
 # You've seen how to save model checkpoint. However we saved the model at the end of training. What if there is an issue (like overfitting ? or our computer crashes !!!) ? 
@@ -1784,10 +1390,10 @@ plt.show()
 # **Modify the train loop to keep the best model state dict at any point, then reload it at the end of training**
 #
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 
-# %% [markdown] {"toc-hr-collapsed": true}
-# ### Food for thoughts: Tooling
+# %% [markdown] {"toc-hr-collapsed": true, "editable": true, "slideshow": {"slide_type": ""}}
+# ## Food for thoughts: Tooling
 #
 # To conclude this notebook, reflect on the following,
 #
@@ -1820,7 +1426,7 @@ plt.show()
 #
 # **Take a look at the [previous class](https://nbviewer.jupyter.org/github/SupaeroDataScience/deep-learning/blob/main/deep/PyTorch%20Ignite.ipynb), the [official examples](https://nbviewer.jupyter.org/github/pytorch/ignite/tree/master/examples/notebooks/) or the [documentation](https://pytorch.org/ignite/) if want to learn about Ignite**
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ## **Optional** exercises to run at home
 #
 # If you're done with this, you can explore a little bit more : Now that we have a nice training loop we can do hyperparameter tuning !
@@ -1845,14 +1451,14 @@ plt.show()
 #
 # **You can try more things**
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Optimizer Changes
 # Change the optimizer from SGD to optim.Adam. Is it better ? 
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 # HERE
 
-# %% [markdown]
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### Batch Normalization
 #
 # One of the most used "layer" beyond conv / pool / relu is "batch normalization",
@@ -1900,7 +1506,7 @@ plt.show()
 #     
 # </details>
 
-# %% [markdown] {"id": "xUlVYFuPC1yz"}
+# %% [markdown] {"id": "xUlVYFuPC1yz", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Trying other models
 #
 # You have seen a class on different model structure,
@@ -1913,13 +1519,13 @@ plt.show()
 # You can also use models from [torchvision](https://pytorch.org/docs/stable/torchvision/models.html#classification) in your loop, or as inspiration
 #
 
-# %% [markdown] {"id": "L5vTgr9OC1yz"}
+# %% [markdown] {"id": "L5vTgr9OC1yz", "editable": true, "slideshow": {"slide_type": ""}}
 # **Modify the model structure and launch another training... Is it better ?**
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 # HERE
 
-# %% [markdown] {"tags": []}
+# %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ### LR Scheduling
 #
 # Sometimes it's best to reduce the learning rate if you stop improving, or to reduce learning rate at the end of training
@@ -1930,24 +1536,14 @@ plt.show()
 #
 # - **Modify the train loop to change the learning rate when the validation loss is stagnating**
 
-# %%
+# %% {"editable": true, "slideshow": {"slide_type": ""}}
 # ...
 
 # %% [markdown]
-# ### Transfer Learning
+# ### How to train neural networks ?
 #
-# For usual tasks such as classification or detection, we use "transfer learning":
+# Some links...
 #
-#     In practice, very few people train an entire Convolutional Network from scratch (with random initialization), because it is relatively rare to have a dataset of sufficient size. Instead, it is common to pretrain a ConvNet on a very large dataset (e.g. ImageNet, which contains 1.2 million images with 1000 categories), and then use the ConvNet either as an initialization or a fixed feature extractor for the task of interest.
-#     
-# Adapt this tutorial to do transfer learning from a network available in torchvision to our use case
+# http://cs231n.stanford.edu/slides/2023/lecture_7.pdf
 #
-# https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
-#
-# I advise you to select resnet18
-#
-# The biggest library of pretrained models is available here :
-#
-# https://github.com/rwightman/pytorch-image-models
-
-# %%
+# https://karpathy.github.io/2019/04/25/recipe/
