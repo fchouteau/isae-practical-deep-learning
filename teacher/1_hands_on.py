@@ -59,7 +59,7 @@ import torchinfo
 
 # %% {"id": "XLml82VWC1yK", "editable": true, "slideshow": {"slide_type": ""}}
 # Configuration variables
-TOY_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/toy_aircraft_dataset.npz"
+TOY_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/toy_aircraft_dataset_2023.npz"
 
 # %% [markdown] {"id": "Shmmb50XC1yK", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Image (reminders)

@@ -40,7 +40,7 @@ import numpy as np
 
 # %%
 # Global variables
-TRAINVAL_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/large_aircraft_dataset.npz"
+TRAINVAL_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/large_aircraft_dataset_2023.npz"
 
 # %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ## Q0. Downloading & splitting the dataset

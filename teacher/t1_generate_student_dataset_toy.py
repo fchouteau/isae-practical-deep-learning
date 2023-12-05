@@ -7,9 +7,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.7.1
+#       jupytext_version: 1.16.0
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -71,7 +71,9 @@ DENSE_TILE_STRIDE = 32
 MARGIN = 16
 
 # %%
-trainval_dataset.items = trainval_dataset.items[: min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))]
+trainval_dataset.items = trainval_dataset.items[
+    : min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))
+]
 
 # %%
 random_tiles = RandomTiles(
@@ -162,12 +164,16 @@ train_fg_images, test_fg_images = (
     trainval_fg_images[: int(TRAIN_TEST_SPLIT * n_fg)],
     trainval_fg_images[int(TRAIN_TEST_SPLIT * n_fg) :],
 )
-train_fg_labels, test_fg_labels = [1 for _ in train_fg_images], [1 for _ in test_fg_images]
+train_fg_labels, test_fg_labels = [1 for _ in train_fg_images], [
+    1 for _ in test_fg_images
+]
 train_bg_images, test_bg_images = (
     trainval_bg_images[: int(TRAIN_TEST_SPLIT * n_bg)],
     trainval_bg_images[int(TRAIN_TEST_SPLIT * n_bg) :],
 )
-train_bg_labels, test_bg_labels = [0 for _ in train_bg_images], [0 for _ in test_bg_images]
+train_bg_labels, test_bg_labels = [0 for _ in train_bg_images], [
+    0 for _ in test_bg_images
+]
 
 train_images = np.concatenate([train_fg_images, train_bg_images], axis=0)
 train_labels = np.concatenate([train_fg_labels, train_bg_labels], axis=0)
@@ -192,7 +198,7 @@ print(test_labels.shape)
 
 # %%
 # Save as dict of nparrays
-dataset_path = Path("./data") / "toy_aircraft_dataset.npz"
+dataset_path = Path("./data") / "toy_aircraft_dataset_2023.npz"
 
 with open(dataset_path, "wb") as f:
     np.savez_compressed(
@@ -208,7 +214,9 @@ with open(dataset_path, "wb") as f:
 import shlex
 import subprocess
 
-cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(str(dataset_path.resolve()))
+cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(
+    str(dataset_path.resolve())
+)
 print(cmd)
 subprocess.check_call(cmd, shell=True)
 # %% [markdown]
@@ -221,7 +229,7 @@ import numpy as np
 # try to reload using numpy datasource
 ds = np.DataSource("/tmp/")
 f = ds.open(
-    "https://storage.googleapis.com/fchouteau-isae-deep-learning/toy_aircraft_dataset.npz",
+    "https://storage.googleapis.com/fchouteau-isae-deep-learning/toy_aircraft_dataset_2023.npz",
     "rb",
 )
 toy_dataset = np.load(f)

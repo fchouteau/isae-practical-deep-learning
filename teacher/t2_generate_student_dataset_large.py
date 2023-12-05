@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.7.1
+#       jupytext_version: 1.16.0
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -18,7 +18,7 @@
 # %autoreload 2
 
 # %%
-# %matplotlib widget
+# # %matplotlib widget
 
 # %%
 import sys
@@ -59,9 +59,13 @@ DENSE_TILE_STRIDE = 16
 MARGIN = 16
 
 # %%
-trainval_dataset.items = trainval_dataset.items[: min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))]
+trainval_dataset.items = trainval_dataset.items[
+    : min(len(trainval_dataset), MAX_ITEMS or len(trainval_dataset))
+]
 
-train_dataset, test_dataset = helpers.dataset_generation.split_dataset(trainval_dataset, proportion=0.8)
+train_dataset, test_dataset = helpers.dataset_generation.split_dataset(
+    trainval_dataset, proportion=0.8
+)
 test_dataset = test_dataset.extend(eval_dataset)
 
 # %%
@@ -70,25 +74,40 @@ print("VAL: {}".format(list(set(item.key for item in test_dataset.items))))
 
 # %%
 sliding_window_dense = SlidingWindow(
-    tile_size=TILE_SIZE, stride=DENSE_TILE_STRIDE, margin_from_bounds=MARGIN, discard_background=True
+    tile_size=TILE_SIZE,
+    stride=DENSE_TILE_STRIDE,
+    margin_from_bounds=MARGIN,
+    discard_background=True,
 )
 
 sliding_window_sparse = SlidingWindow(
-    tile_size=TILE_SIZE, stride=SPARSE_TILE_STRIDE, margin_from_bounds=MARGIN, discard_background=False
+    tile_size=TILE_SIZE,
+    stride=SPARSE_TILE_STRIDE,
+    margin_from_bounds=MARGIN,
+    discard_background=False,
 )
 
-random_tiles = RandomTiles(tile_size=TILE_SIZE, num_tiles=1024, margin_from_bounds=MARGIN)
+random_tiles = RandomTiles(
+    tile_size=TILE_SIZE, num_tiles=1024, margin_from_bounds=MARGIN
+)
 
 centered_tiles = CenteredTiles(tile_size=TILE_SIZE)
 
-sliding_windows = [sliding_window_dense, sliding_window_sparse, random_tiles, centered_tiles]
+sliding_windows = [
+    sliding_window_dense,
+    sliding_window_sparse,
+    random_tiles,
+    centered_tiles,
+]
 
 # %%
 train_tiles = helpers.dataset_generation.generate_candidate_tiles_from_items(
     train_dataset, sliding_windows=sliding_windows, n_jobs=4
 )
 # %%
-random_tiles = RandomTiles(tile_size=TILE_SIZE, num_tiles=10 * 1024, margin_from_bounds=MARGIN)
+random_tiles = RandomTiles(
+    tile_size=TILE_SIZE, num_tiles=10 * 1024, margin_from_bounds=MARGIN
+)
 
 centered_tiles = CenteredTiles(tile_size=TILE_SIZE)
 
@@ -110,7 +129,7 @@ import numpy as np
 from khumeia.roi.tiles_sampler import *
 
 # %%
-SAMPLING_RATIO = 9
+SAMPLING_RATIO = 19
 NB_POSITIVE_TRAIN_TILES = 4608
 NB_POSITIVE_TEST_TILES = 1024
 
@@ -144,7 +163,9 @@ train_array = helpers.dataset_generation.dump_dataset_tiles(
 )
 
 # %%
-test_array = helpers.dataset_generation.dump_dataset_tiles(tiles_dataset=test_tiles_sampled, items_dataset=test_dataset)
+test_array = helpers.dataset_generation.dump_dataset_tiles(
+    tiles_dataset=test_tiles_sampled, items_dataset=test_dataset
+)
 
 # %%
 train_images = np.asarray([i[0] for i in train_array.items])
@@ -176,7 +197,7 @@ test_labels = test_labels[test_indexes]
 
 # %%
 # Save as dict of nparrays
-dataset_path = Path("./data") / "large_aircraft_dataset.npz"
+dataset_path = Path("./data") / "large_aircraft_dataset_2023.npz"
 
 with open(dataset_path, "wb") as f:
     np.savez_compressed(
@@ -192,7 +213,9 @@ with open(dataset_path, "wb") as f:
 import shlex
 import subprocess
 
-cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(os.path.abspath(dataset_path))
+cmd = "gsutil -m cp -r {} gs://fchouteau-isae-deep-learning/".format(
+    os.path.abspath(dataset_path)
+)
 print(cmd)
 subprocess.check_call(cmd, shell=True)
 # %% [markdown]
@@ -202,7 +225,7 @@ subprocess.check_call(cmd, shell=True)
 # try to reload using numpy datasource
 ds = np.DataSource("/tmp/")
 f = ds.open(
-    "https://storage.googleapis.com/fchouteau-isae-deep-learning/large_aircraft_dataset.npz",
+    "https://storage.googleapis.com/fchouteau-isae-deep-learning/large_aircraft_dataset_2023.npz",
     "rb",
 )
 large_dataset = np.load(f)

@@ -42,7 +42,7 @@ from torchvision import transforms
 
 # %%
 # Global variables
-tiles_dataset_url = "https://storage.googleapis.com/fchouteau-isae-deep-learning/tiles_aircraft_dataset.npz"
+tiles_dataset_url = "https://storage.googleapis.com/fchouteau-isae-deep-learning/tiles_aircraft_dataset_2023.npz"
 
 # %% [markdown]
 # ## Download the dataset

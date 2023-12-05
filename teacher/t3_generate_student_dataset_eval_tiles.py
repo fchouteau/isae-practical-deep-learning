@@ -7,11 +7,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.7
+#       jupytext_version: 1.16.0
 #   kernelspec:
-#     display_name: py38-vitis35-torch113-cpu-quantizer
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: py38-vitis35-torch113-cpu-quantizer
+#     name: python3
 # ---
 
 # %%
@@ -121,7 +121,7 @@ eval_large_labels = dict(
 # %%
 # Save as dict of nparrays
 data_dir = Path("./data/").resolve()
-dataset_path = data_dir / "tiles_aircraft_dataset.npz"
+dataset_path = data_dir / "tiles_aircraft_dataset_2023.npz"
 
 with open(dataset_path, "wb") as f:
     np.savez_compressed(f, eval_tiles=eval_large_images, **eval_large_labels)
@@ -143,7 +143,7 @@ subprocess.check_call(cmd, shell=True)
 # try to reload using numpy datasource
 ds = np.DataSource("/tmp/")
 f = ds.open(
-    "https://storage.googleapis.com/fchouteau-isae-deep-learning/tiles_aircraft_dataset.npz",
+    "https://storage.googleapis.com/fchouteau-isae-deep-learning/tiles_aircraft_dataset_2023.npz",
     "rb",
 )
 toy_dataset = np.load(f)
@@ -189,8 +189,8 @@ import itertools
 from PIL import Image
 
 # %%
-t = eval_tiles[3]
-l = eval_labels[3]
+t = eval_tiles[2]
+l = eval_labels[2]
 
 # %%
 planes_xy = np.asarray([(x + w // 2, y + h // 2) for x, y, w, h in l])
@@ -236,7 +236,7 @@ for yt, xt in itertools.product(range(max_i), range(max_j)):
 
 # %%
 gif[0].save(
-    "docs/static/sliding_window.gif",
+    "docs/static/img/sliding_window.gif",
     save_all=True,
     append_images=gif[1:],
     duration=100,
@@ -246,4 +246,6 @@ gif[0].save(
 # %% [markdown]
 # Sliding window demo 
 #
-# ![sw](docs/static/sliding_window.gif)
+# ![sw](docs/static/img/sliding_window.gif)
+
+# %%
