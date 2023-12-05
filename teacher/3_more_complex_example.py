@@ -289,10 +289,18 @@ model.to(DEVICE)
 # %%
 print(model)
 
+
 # %%
 # declare optimizers and loss
-optimizer = ...
-criterion = ...
+def setup_training():
+    model = model_fn()
+    model.to(DEVICE)
+
+    optimizer = ...
+    criterion = ...
+
+    return model, optimizer, criterion
+
 
 # %%
 # Run your training and plot your train/val metrics
@@ -545,6 +553,25 @@ plt.show()
 # Rewrite your data selection to ensure there are false positives in your negative selected examples.
 #
 # Does it improve the final performance ?
+
+# %%
+
+# %% [markdown]
+# ### c. Loss function change
+#
+# Sometimes, changing the loss function also helps solving the issue.
+#
+# We trained with `nn.BCELoss(reduction="mean")`
+#
+# Try setting [weights](https://pytorch.org/docs/stable/generated/torch.nn.BCELoss.html#torch.nn.BCELoss) so that you weight more the loss on the positive samples than the negative. 
+#
+# Some losses are also dedicated to very imbalanced problems, such as [the sigmoid focal loss](https://pytorch.org/vision/stable/generated/torchvision.ops.sigmoid_focal_loss.html#torchvision.ops.sigmoid_focal_loss)
+#
+# **Exercise**
+#
+# Try changing the loss function
+
+# %%
 
 # %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
 # ## Q3. Transfer learning and Model architecture modification
