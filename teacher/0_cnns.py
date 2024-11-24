@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -105,7 +105,7 @@ plt.show()
 # %% [markdown]
 # You've seen this image in the previous class :
 #
-# <img src="https://i.stack.imgur.com/FjvuN.gif" alt="drawing" width="400"/>
+# <img src="https://raw.githubusercontent.com/SupaeroDataScience/deep-learning/refs/heads/main/vision/FjvuN.gif" alt="drawing" width="400"/>
 #
 # This is a convolution operator.
 #
@@ -250,7 +250,7 @@ plt.show()
 #
 # Let's get back to our GIF
 #
-# <img src="https://i.stack.imgur.com/FjvuN.gif" alt="drawing" width="400"/>
+# <img src="https://raw.githubusercontent.com/SupaeroDataScience/deep-learning/refs/heads/main/vision/FjvuN.gif" alt="drawing" width="400"/>
 #
 # It's the same as above, except our filter takes all channels of the image as input. So basically a "Convolution" layer is a filter
 
@@ -615,6 +615,8 @@ for epoch in range(0, 1):
 # Basically transform some positions into others, so that the spatial relationship between pixels is not respected anymore
 #
 # And we will train networks on this : A CNN (convolutional) and a ANN (fully connected)
+#
+# We will then check what results the two different architectures are getting on each dataset.
 
 # %% editable=true slideshow={"slide_type": ""}
 perm = torch.randperm(784)
@@ -631,6 +633,11 @@ for i in range(10):
     plt.subplot(4, 5, i + 11)
     plt.imshow(image_perm.squeeze().numpy())
     plt.axis("off")
+
+# %% [markdown]
+# The figure above demonstrate our "deterministic permutation" : In the 1st two rows, you see the dataset with the structured data (the numbers). In the second dataset, the content is the same but the pixels are "randomly scattered" so there are now structure.
+#
+# Of course the permutation is deterministic, we always permute the pixels the same way, otherwise nothing woul
 
 # %% [markdown] editable=true slideshow={"slide_type": ""}
 # First, let's train a CNN
@@ -689,5 +696,7 @@ plt.bar(
 plt.ylim((min(accuracy_list) - 5, 96))
 plt.ylabel("Accuracy [%]")
 for tick in plt.gca().xaxis.get_major_ticks():
-    tick.label.set_fontsize(10)
+    tick.label1.set_fontsize(10)
 plt.title("Performance comparison");
+
+# %%

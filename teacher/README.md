@@ -4,6 +4,12 @@ Contain the necessary scripts and tools to:
 - generate dataset
 - build the slides/docs
 
+## Requirements
+
+```bash
+npm install -g reveal-md@5.5.2
+```
+
 ## How-to
 
 - [build the documentation website](./build_docs_site.sh)

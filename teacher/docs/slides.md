@@ -15,9 +15,9 @@ revealOptions:
 
 # Deep Learning in Practice
 
-**ISAE-SUPAERO, SDD, 6 Dec. 2023**
+**ISAE-SUPAERO, SDD, 25 Nov. 2024**
 
-Florient CHOUTEAU, Dorian CAZENEUVE
+Florient CHOUTEAU, Hedwin BONNAVAUD
 
 <!--v-->
 
@@ -51,24 +51,18 @@ This is awesome ! 😲 <!-- .element: style="color: white; font-family: cursive;
 
 ### Who ?
 
-- ![ads](static/img/AIRBUS_Blue.png) <!-- .element: height="44px" width="220px" -->
-- SDD 2016
-- Computer Vision R&D at **Airbus Defence and Space**
-- Ground segment software for Earth Observation satellites
+<img src="static/img/ads_logo.jpg" alt="" width="128px" height="128px" style="background:none; border:none; box-shadow:none;"/>
+
+- **Florient CHOUTEAU**, SDD 2016
+- Expert (Staff Engineer) in Artificial Intelligence for Space Systems at **Airbus Defence and Space**
+- Computer Vision Team (Earth Observation, Space Exploration, Space Domain Awareness)
+- Specialized in Satellite Imagery Processing & Deep Learning
 - Daily job revolving around Machine Learning + Satellite Imagery
     - Information extraction
     - Image processing
     - Research stuff
 
-(contact me on slack)
-
-<!--v-->
-
-### Who ?
-
-You'll see me a bit this year :
-- CNN for Computer Vision
-- Outils du Big Data : Cloud, Docker, Deployment
+Any question ? contact me on slack !
 
 <!--v-->
 
@@ -656,3 +650,35 @@ Other keywords that are important for CNN in Computer Vision
 - [Vision Transformers](https://www.v7labs.com/blog/vision-transformer-guide)
 - [Generative Adversarial Networks](https://github.com/SupaeroDataScience/deep-learning/tree/main/GAN)
 - [Diffusion Models](http://cs231n.stanford.edu/slides/2023/lecture_15.pdf) (StableDiffusion, MidJourney ...)
+
+<!--s-->
+
+## Extra : From CNN to Transformers
+
+<!--v-->
+
+![AIAYN](https://miro.medium.com/v2/resize:fit:1400/1*Mt09UTRNbV88dvl8mJ8NzQ.png)
+
+<!--v-->
+
+![ViT](https://miro.medium.com/v2/resize:fit:1400/0*brmcPLvJpiQWjZpY)
+
+[An Image is Worth 16x16 Words](https://arxiv.org/abs/2010.11929)
+
+<!--v-->
+
+![vitcnn](https://media.springernature.com/full/springer-static/image/art%3A10.1038%2Fs41598-024-72254-w/MediaObjects/41598_2024_72254_Fig1_HTML.png)  <!-- .element: style="width: 60%; height: 40%"-->
+
+<!--v-->
+
+https://cs231n.stanford.edu/slides/2024/lecture_8.pdf
+
+<!--v-->
+
+[example use case](https://www.picsellia.com/post/are-transformers-replacing-cnns-in-object-detection)
+
+<!--s-->
+
+## Extra : AI for CV, in practice
+
+[ISAE SPAPS 2023-2024 class](https://docs.google.com/presentation/d/10zd65eg0X_aqydggKRvC3s20AXSu3WI9RWWUKJVvfAI/edit?usp=sharing)

@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -15,7 +15,7 @@
 # ---
 
 # %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
-# # Session 2 Part 2: Using the sliding window technique to predict on larger images
+# # Session 2 : Using the sliding window technique to predict on larger images
 #
 # <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" align="left" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>&nbsp;| Florient Chouteau | <a href="https://supaerodatascience.github.io/deep-learning/">https://supaerodatascience.github.io/deep-learning/</a>
 #
@@ -49,7 +49,7 @@ tiles_dataset_url = "https://storage.googleapis.com/fchouteau-isae-deep-learning
 
 # %%
 # Download data
-ds = np.DataSource("/tmp/")
+ds = np.lib.npyio.DataSource("/tmp/")
 f = ds.open(tiles_dataset_url, "rb")
 eval_tiles = np.load(f)
 eval_tiles = eval_tiles["eval_tiles"]

@@ -8,7 +8,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -94,7 +94,7 @@ TOY_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learning/t
 # in a cell above the cell below
 
 # %% {"id": "aPxBx-2-C1yP", "editable": true, "slideshow": {"slide_type": ""}}
-ds = np.DataSource(destpath="/tmp/")
+ds = np.lib.npyio.DataSource(destpath="/tmp/")
 f = ds.open(TOY_DATASET_URL, "rb")
 
 toy_dataset = np.load(f)
@@ -174,7 +174,8 @@ plt.show()
 # - We use the validation set to tune hyperparameters (optimizers, early stopping)
 # - We use the test set for final metrics on our tuned model
 #
-# ![](https://i.stack.imgur.com/osBuF.png)
+# ![](https://github.com/SupaeroDataScience/deep-learning/blob/main/vision/osBuF.png?raw=true)
+# ![](https://raw.githubusercontent.com/SupaeroDataScience/deep-learning/refs/heads/main/vision/pXAfX.png)
 #
 # For more information as to why we use train/validation and test refer to these articles:
 #
@@ -493,7 +494,7 @@ print(
     torchinfo.summary(
         some_model,
         input_data=x,
-        columns=[
+        col_names=[
             "input_size",
             "output_size",
             "num_params",
@@ -935,7 +936,7 @@ for epoch in range(EPOCHS):
     model.eval()
     valid_epoch_loss = valid_one_epoch(model, val_loader)
 
-    print(f"EPOCH={epoch}, TRAIN={train_epoch_loss}, VAL={valid_epoch_loss}")
+    print(f"EPOCH={epoch}, TRAIN={train_epoch_loss:.05f}, VAL={valid_epoch_loss:.05f}")
 
     train_losses.append(train_epoch_loss)
     valid_losses.append(valid_epoch_loss)
@@ -1069,7 +1070,11 @@ print(model)
 
 # Load state
 checkpoint_path = "model.pt"
-model.load_state_dict(torch.load(checkpoint_path))
+model.load_state_dict(
+    torch.load(
+        checkpoint_path, weights_only=True, map_location=lambda storage, loc: storage
+    )
+)
 
 print("Model Loaded")
 
@@ -1185,7 +1190,7 @@ plt.show()
 
 # %% {"editable": true, "slideshow": {"slide_type": ""}}
 # We round predictions every 0.05 for readability
-y_pred_probas = (y_pred[:, 0] / 0.05).astype(np.int) * 0.05
+y_pred_probas = (y_pred[:, 0] / 0.05).astype(np.int64) * 0.05
 
 fpr, tpr, thresholds = roc_curve(y_true, y_pred_probas)
 roc_auc = auc(fpr, tpr)
@@ -1542,8 +1547,16 @@ plt.show()
 # %% [markdown]
 # ### How to train neural networks ?
 #
-# Some links...
+# You must have noticed that training neural networks depends on a lot of different things : hyperparameters, architectures, data, ...
+#
+# It's an experimental science that requires some tuning... and such tuning can yield very decreasing improvements over time. It's a kind of special hell / pandora's box.
+#
+# Here are some very interesting links on getting started the right way when training neural networks :
 #
 # http://cs231n.stanford.edu/slides/2023/lecture_7.pdf
 #
+# https://cs231n.stanford.edu/slides/2024/lecture_6_part_2.pdf
+#
 # https://karpathy.github.io/2019/04/25/recipe/
+
+# %%

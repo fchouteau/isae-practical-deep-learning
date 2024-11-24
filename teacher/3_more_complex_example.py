@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -15,7 +15,7 @@
 # ---
 
 # %% [markdown] {"editable": true, "slideshow": {"slide_type": ""}}
-# # Session 2 Part 1: Going Further, Discovering class-imbalance in datasets
+# # Session 2 Going Further, Discovering class-imbalance in datasets
 #
 # <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" align="left" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>&nbsp;| Florient Chouteau | <a href="https://supaerodatascience.github.io/deep-learning/">https://supaerodatascience.github.io/deep-learning/</a>
 #
@@ -36,6 +36,7 @@
 
 # %%
 # Put your imports here
+import matplotlib.pyplot as plt
 import numpy as np
 
 # %%
@@ -50,11 +51,12 @@ TRAINVAL_DATASET_URL = "https://storage.googleapis.com/fchouteau-isae-deep-learn
 # - 50k images in training which you should use as training & validation
 # - 5k images in test, which you should only use to compute your final metrics on. **Don't ever use this dataset for early stopping / intermediary metrics**
 #
-# <img src="https://i.stack.imgur.com/pXAfX.png" alt="pokemon" style="width: 400px;"/>
+# ![](https://github.com/SupaeroDataScience/deep-learning/blob/main/vision/osBuF.png?raw=true)
+# ![](https://raw.githubusercontent.com/SupaeroDataScience/deep-learning/refs/heads/main/vision/pXAfX.png)
 
 # %% {"editable": true, "slideshow": {"slide_type": ""}}
 # Download the dataset
-ds = np.DataSource("/tmp/")
+ds = np.lib.npyio.DataSource("/tmp/")
 f = ds.open(TRAINVAL_DATASET_URL, "rb")
 trainval_dataset = np.load(f)
 trainval_images = trainval_dataset["train_images"]
@@ -152,7 +154,17 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets, transforms
 
 # %%
-DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# Apple Silicon Support
+if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    DEVICE = torch.device("mps")
+# NVIDIA GPU
+elif torch.cuda.is_available():
+    DEVICE = torch.device("cuda:0")
+# Fallback to CPU
+else:
+    DEVICE = torch.device("cpu")
+
+print(DEVICE)
 
 
 # %%
@@ -580,10 +592,10 @@ plt.show()
 #
 # You can operate a modification on your structure and observe the effect on final metrics. Of course, remain consistent with credible models, cf Layer Patterns chapter on this "must view" course : http://cs231n.github.io/convolutional-networks/
 #
-# See here for an introduction to complex CNNs:
-# http://cs231n.stanford.edu/slides/2023/lecture_6.pdf
+# See here for an introduction to complex CNNs architectures:
+# https://cs231n.stanford.edu/slides/2024/lecture_6_part_1.pdf
 #
-# <img src="docs/static/img/comparison_architectures.png" alt="pokemon" style="width: 400px;"/>
+# <img src="https://theaisummer.com/static/dfad9981c055b1ba1a37fb3d34ccc4d8/a1792/deep-learning-architectures-plot-2018.png" alt="archs" style="width: 400px;"/>
 #
 # ### Transfer Learning
 #
@@ -683,4 +695,11 @@ plt.show()
 #
 # Reflect on what you just did. What is the most efficient way to gain performance ? data or model / hyperparameters ?
 #
-# Reflect on what is missing from this notebook. Hint : Data preparation !
+# Reflect on what is missing from this notebook. 
+#
+# Some keywords : 
+#
+# - Data preparation ! aka #ETL...
+# - MLOps
+
+# %%
