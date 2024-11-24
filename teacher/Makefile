@@ -54,10 +54,10 @@ build-student-notebooks:
 #        ../4_classification_to_dense.ipynb
 
 copy-to-isae-repo:
-	cp ../README.md /home/fchouteau/classes/deep-learning/vision/
-	cp ../licence.md /home/fchouteau/classes/deep-learning/vision/
-	cp ../0_cnns.ipynb /home/fchouteau/classes/deep-learning/vision/
-	cp ../1_hands_on.ipynb /home/fchouteau/classes/deep-learning/vision/
-	cp ../2_sliding_window.ipynb /home/fchouteau/classes/deep-learning/vision/
-	cp ../3_more_complex_example.ipynb /home/fchouteau/classes/deep-learning/vision/
+	cp ../README.md /Users/fchouteau/repositories/classes/deep-learning/vision/
+	cp ../licence.md /Users/fchouteau/repositories/classes/deep-learning/vision/
+	cp ../0_cnns.ipynb /Users/fchouteau/repositories/classes/deep-learning/vision/
+	cp ../1_hands_on.ipynb /Users/fchouteau/repositories/classes/deep-learning/vision/
+	cp ../2_sliding_window.ipynb /Users/fchouteau/repositories/classes/deep-learning/vision/
+	cp ../3_more_complex_example.ipynb /Users/fchouteau/repositories/classes/deep-learning/vision/
 #	cp ../4_classification_to_dense.ipynb /home/fchouteau/classes/deep-learning/vision/
