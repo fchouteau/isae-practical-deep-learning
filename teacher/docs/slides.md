@@ -149,7 +149,7 @@ This is a "hands-on", not a full class
 
 ### Outcomes
 
-- Use GCP to get access to computing power & GPUs
+- Build an intuition over convolutions and CNNs for image processing
 - Handle a dataset of images, do some basic data exploration
 - Train & evaluate your first CNN on a simple dataset
 - Go beyound accuracy to diagnose your model
@@ -367,12 +367,13 @@ ResNet(
 <!--s-->
 
 ## Session 2
-## Class Imbalance & Sliding Windows
+## More complex example
 
 <!--v-->
 
 ### Objectives
 
+- **A first take at applied Deep Learning, using pytorch, CNNs and what we previously learned**
 - Train a CNN on a larger & imbalanced dataset
 - Evaluate the performance of a model on imbalanced data
 - Try and improve performance
@@ -422,7 +423,7 @@ ResNet(
 1. Start/Restart your machine
 2. Follow notebooks 2 and 3
 
-![xkcd](https://i.stack.imgur.com/U9Iki.png)
+![xkcd](https://preview.redd.it/5cjdqxcg07k11.png?auto=webp&s=aff0c7523b10a1e8085177470e1b9276b84296b5)
 
 <!--s-->
 
@@ -628,7 +629,7 @@ Instance Segmentation
 
 <!--v-->
 
-To learn more about this, see [this](http://cs231n.stanford.edu/slides/2022/lecture_9_jiajun.pdf)
+To learn more about this, see [this cs231n class](http://cs231n.stanford.edu/slides/2022/lecture_9_jiajun.pdf)
 
 <!--v-->
 

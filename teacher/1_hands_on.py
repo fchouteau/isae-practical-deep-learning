@@ -1154,6 +1154,8 @@ plt.show()
 # ![](http://algolytics.com/wp-content/uploads/2018/05/roc1_en.png)
 #
 # It is used to choose a threshold on the output probability in case you are interesting in controling the false positive rate.
+#
+# **In our case : which is the positive class ? which is the negative class ?**
 
 # %% {"id": "sEj4ZBgTC1yt", "editable": true, "slideshow": {"slide_type": ""}}
 # Compute ROC curve and Area Under Curver
@@ -1225,7 +1227,7 @@ selected_threshold = ...
 
 print("Confusion matrix")
 
-y_pred_classes = y_pred_probas > selected_threshold
+y_pred_classes = y_pred_probas >= selected_threshold
 
 cm = confusion_matrix(y_true, y_pred_classes)
 
@@ -1237,6 +1239,11 @@ disp.plot()
 plt.show()
 
 # How did the confusion matrix evolve ? Does it match your intuition ?
+
+# %% [markdown]
+# **Food for thought** : 
+# - How would you generalize this method if you had 10 (exclusive) classes ? Example with MNIST or [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) ?
+# - Would you select one general threshold or one threshold per class ? Or maybe get the max proba then threshold it differently with each class ?
 
 # %% [markdown] {"id": "ql5f8eLHC1yu", "editable": true, "slideshow": {"slide_type": ""}}
 # ### Misclassified examples
